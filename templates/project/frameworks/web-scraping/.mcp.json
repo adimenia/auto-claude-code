@@ -1,0 +1,155 @@
+{
+  "mcpServers": {
+    "postgresql": {
+      "command": "uvx",
+      "args": ["mcp-server-postgres"],
+      "env": {
+        "POSTGRES_CONNECTION_STRING": "postgresql://user:password@localhost:5432/scraped_data"
+      }
+    },
+    "mysql": {
+      "command": "uvx",
+      "args": ["mcp-server-mysql"],
+      "env": {
+        "MYSQL_CONNECTION_STRING": "mysql://user:password@localhost:3306/scraped_data"
+      }
+    },
+    "sqlite": {
+      "command": "uvx",
+      "args": ["mcp-server-sqlite"],
+      "env": {
+        "SQLITE_DB_PATH": "./data/scraped_data.db"
+      }
+    },
+    "fetch": {
+      "command": "uvx",
+      "args": ["mcp-server-fetch"],
+      "env": {
+        "TIMEOUT": "60",
+        "MAX_REDIRECTS": "10",
+        "USER_AGENT": "Mozilla/5.0 (compatible; WebScraper/1.0)",
+        "RESPECT_ROBOTS_TXT": "true"
+      }
+    },
+    "filesystem": {
+      "command": "uvx",
+      "args": ["mcp-server-filesystem"],
+      "env": {
+        "ALLOWED_DIRECTORIES": "/src,/data,/configs,/scripts,/tests,/logs,/cache"
+      }
+    },
+    "git": {
+      "command": "uvx",
+      "args": ["mcp-server-git"],
+      "env": {
+        "GIT_REPO_PATH": ".",
+        "GIT_LFS_ENABLED": "false"
+      }
+    },
+    "time": {
+      "command": "uvx",
+      "args": ["mcp-server-time"]
+    },
+    "brave-search": {
+      "command": "uvx",
+      "args": ["mcp-server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": ""
+      }
+    },
+    "memory": {
+      "command": "uvx",
+      "args": ["mcp-server-memory"],
+      "env": {
+        "MEMORY_BANK_SIZE": "1000"
+      }
+    },
+    "sequential-thinking": {
+      "command": "uvx",
+      "args": ["mcp-server-sequential-thinking"]
+    },
+    "python": {
+      "command": "uvx",
+      "args": ["mcp-server-python"],
+      "env": {
+        "PYTHON_EXECUTABLE": "python",
+        "ALLOWED_MODULES": "requests,beautifulsoup4,scrapy,selenium,pandas,lxml,html5lib,urllib"
+      }
+    }
+  },
+  "description": "MCP server configuration optimized for ethical web scraping, data extraction, and storage workflows",
+  "notes": {
+    "database": "Configure your preferred database for storing scraped data (PostgreSQL for large datasets, SQLite for development)",
+    "fetch": "HTTP client configured for web scraping with extended timeouts, robots.txt respect, and proper user agent",
+    "filesystem": "File operations for scraped data, cache files, configuration, and logs with scraping directory structure",
+    "git": "Version control for scraper code and configurations (data should not be committed)",
+    "time": "Time utilities for scheduling scraping jobs, rate limiting, and timestamp generation",
+    "brave-search": "Web search for finding target websites, checking competitors, and research",
+    "memory": "Persistent memory for tracking scraping patterns, website structures, and extraction rules",
+    "sequential-thinking": "Structured reasoning for complex scraping logic, data extraction strategies, and ethical considerations",
+    "python": "Safe Python execution environment for scraping scripts, data processing, and extraction logic",
+    "setup": [
+      "1. Copy this file to your web scraping project root as .mcp.json",
+      "2. Configure database connection strings for your scraped data storage",
+      "3. Set BRAVE_API_KEY if using search functionality for target discovery",
+      "4. Adjust ALLOWED_DIRECTORIES to match your project structure",
+      "5. Configure Python server with scraping-specific modules",
+      "6. Test with ethical scraping practices and rate limiting",
+      "7. Ensure compliance with robots.txt and terms of service"
+    ],
+    "web_scraping_workflow": [
+      "Database servers for structured storage of scraped data",
+      "Fetch server for HTTP requests with proper rate limiting and robots.txt compliance",
+      "Filesystem for managing raw data, processed data, cache, and configuration files",
+      "Git for version control of scraper code and configuration (not data)",
+      "Time server for scheduling, rate limiting, and temporal data processing",
+      "Python server for developing and testing scraping logic safely",
+      "Memory server for tracking extraction patterns and website structures",
+      "Search server for discovering target websites and competitive analysis"
+    ],
+    "ethical_scraping": [
+      "Always respect robots.txt files and website terms of service",
+      "Implement proper rate limiting to avoid overwhelming servers",
+      "Use appropriate user agents and identify your scraping bot",
+      "Store data responsibly and in compliance with privacy laws",
+      "Never scrape personal or sensitive information without permission",
+      "Respect copyright and intellectual property rights",
+      "Monitor for changes in website structure and terms of service"
+    ],
+    "data_management": [
+      "Use database servers for structured storage and efficient querying",
+      "Filesystem for raw data caching and processed data exports",
+      "Git for version control of extraction logic and configurations",
+      "Time server for data timestamps, scheduling, and retention policies",
+      "Memory for tracking data quality patterns and extraction success rates",
+      "Python server for data validation, cleaning, and transformation",
+      "Search for discovering new data sources and validation"
+    ],
+    "performance_optimization": [
+      "Configure fetch server with appropriate timeouts and connection pooling",
+      "Use database connections optimized for bulk data insertion",
+      "Implement caching strategies using filesystem for repeated requests",
+      "Time server for optimal scheduling and rate limiting calculations",
+      "Memory for tracking performance metrics and optimization opportunities",
+      "Python server for testing extraction efficiency and data processing speed"
+    ],
+    "security": [
+      "Never commit real API keys, database credentials, or scraped data",
+      "Use environment variables for all sensitive configuration",
+      "Restrict Python server to approved scraping libraries only",
+      "Limit filesystem access to project directories",
+      "Configure fetch server with security headers and SSL verification",
+      "Use secure database connections with proper authentication",
+      "Implement data anonymization and privacy protection measures"
+    ],
+    "legal_compliance": [
+      "Always check and comply with robots.txt before scraping",
+      "Review website terms of service and privacy policies",
+      "Implement data retention and deletion policies as required",
+      "Respect rate limits and server capacity constraints",
+      "Document data sources and usage permissions",
+      "Implement user consent mechanisms where required",
+      "Regular compliance audits and legal review processes"
+    ]
+  }
+}

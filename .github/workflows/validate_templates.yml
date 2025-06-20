@@ -1,0 +1,216 @@
+name: Validate Templates
+
+on:
+  push:
+    paths:
+      - 'templates/**'
+      - 'presets/**'
+      - 'tools/validate-config.py'
+  pull_request:
+    paths:
+      - 'templates/**'
+      - 'presets/**'
+      - 'tools/validate-config.py'
+
+jobs:
+  validate-json:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Validate JSON syntax in templates
+      run: |
+        echo "🔍 Validating JSON files..."
+        find templates/ -name "*.json" -type f | while read file; do
+          echo "Checking $file"
+          python -m json.tool "$file" > /dev/null || exit 1
+        done
+        echo "✅ All template JSON files are valid"
+    
+    - name: Validate JSON syntax in presets
+      run: |
+        echo "🔍 Validating preset files..."
+        find presets/ -name "*.json" -type f | while read file; do
+          echo "Checking $file"
+          python -m json.tool "$file" > /dev/null || exit 1
+        done
+        echo "✅ All preset JSON files are valid"
+
+  validate-claude-md:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Check CLAUDE.md files structure
+      run: |
+        echo "🔍 Validating CLAUDE.md files..."
+        find templates/ -name "CLAUDE.md" -type f | while read file; do
+          echo "Checking $file"
+          
+          # Check for required sections
+          if ! grep -q "## Project Overview" "$file"; then
+            echo "❌ Missing '## Project Overview' section in $file"
+            exit 1
+          fi
+          
+          if ! grep -q "## Development Workflow" "$file"; then
+            echo "❌ Missing '## Development Workflow' section in $file"
+            exit 1
+          fi
+          
+          if ! grep -q "## Critical Rules" "$file"; then
+            echo "❌ Missing '## Critical Rules' section in $file"
+            exit 1
+          fi
+          
+          if ! grep -q "## Claude-Specific Instructions" "$file"; then
+            echo "❌ Missing '## Claude-Specific Instructions' section in $file"
+            exit 1
+          fi
+          
+          echo "✅ $file has required sections"
+        done
+        echo "✅ All CLAUDE.md files are properly structured"
+
+  validate-settings:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install jsonschema
+    
+    - name: Validate settings.json structure
+      run: |
+        echo "🔍 Validating settings.json files..."
+        find templates/ -name "settings.json" -type f | while read file; do
+          echo "Checking $file"
+          
+          # Check for required top-level keys
+          if ! jq -e '.permissions' "$file" > /dev/null; then
+            echo "❌ Missing 'permissions' key in $file"
+            exit 1
+          fi
+          
+          if ! jq -e '.permissions.allow' "$file" > /dev/null; then
+            echo "❌ Missing 'permissions.allow' array in $file"
+            exit 1
+          fi
+          
+          if ! jq -e '.permissions.deny' "$file" > /dev/null; then
+            echo "❌ Missing 'permissions.deny' array in $file"
+            exit 1
+          fi
+          
+          # Check that allow/deny are arrays
+          if ! jq -e '.permissions.allow | type == "array"' "$file" > /dev/null; then
+            echo "❌ 'permissions.allow' must be an array in $file"
+            exit 1
+          fi
+          
+          if ! jq -e '.permissions.deny | type == "array"' "$file" > /dev/null; then
+            echo "❌ 'permissions.deny' must be an array in $file"
+            exit 1
+          fi
+          
+          echo "✅ $file has valid structure"
+        done
+        echo "✅ All settings.json files are properly structured"
+
+  validate-mcp:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Validate MCP configuration files
+      run: |
+        echo "🔍 Validating .mcp.json files..."
+        find templates/ -name ".mcp.json" -type f | while read file; do
+          echo "Checking $file"
+          
+          # Check for required structure
+          if ! jq -e '.mcpServers' "$file" > /dev/null; then
+            echo "❌ Missing 'mcpServers' key in $file"
+            exit 1
+          fi
+          
+          # Check that mcpServers is an object
+          if ! jq -e '.mcpServers | type == "object"' "$file" > /dev/null; then
+            echo "❌ 'mcpServers' must be an object in $file"
+            exit 1
+          fi
+          
+          # Validate each server configuration
+          jq -r '.mcpServers | keys[]' "$file" | while read server; do
+            if ! jq -e ".mcpServers.\"$server\".command" "$file" > /dev/null; then
+              echo "❌ Server '$server' missing 'command' in $file"
+              exit 1
+            fi
+            
+            if ! jq -e ".mcpServers.\"$server\".args" "$file" > /dev/null; then
+              echo "❌ Server '$server' missing 'args' array in $file"
+              exit 1
+            fi
+          done
+          
+          echo "✅ $file has valid MCP structure"
+        done
+        echo "✅ All .mcp.json files are properly structured"
+
+  security-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Check for secrets in templates
+      run: |
+        echo "🔍 Checking for potential secrets in templates..."
+        
+        # Check for common secret patterns
+        if grep -r -i "password.*=" templates/ --include="*.md" --include="*.json"; then
+          echo "❌ Found potential password in templates"
+          exit 1
+        fi
+        
+        if grep -r -i "api_key.*=" templates/ --include="*.md" --include="*.json"; then
+          echo "❌ Found potential API key in templates" 
+          exit 1
+        fi
+        
+        if grep -r -i "secret.*=" templates/ --include="*.md" --include="*.json" | grep -v "SECRET_KEY=your-secret-key" | grep -v "your_token_here"; then
+          echo "❌ Found potential secret in templates"
+          exit 1
+        fi
+        
+        echo "✅ No secrets found in templates"
+
+  spell-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install aspell
+      run: sudo apt-get install aspell aspell-en
+    
+    - name: Spell check documentation
+      run: |
+        echo "🔍 Spell checking markdown files..."
+        find templates/ docs/ -name "*.md" -type f | while read file; do
+          echo "Checking $file"
+          # Extract text and check spelling, ignore code blocks and technical terms
+          aspell list < "$file" | grep -v -E '^(claude|fastapi|django|pytest|mypy|flake8|postgresql|mongodb|redis|sqlite|javascript|typescript|python|github|api|json|yaml|md|html|css|js|py|npm|pip|conda|pipenv|poetry|vscode|pycharm|windsurf|cursor|bash|zsh|fish|powershell|wsl|linux|macos|windows|ubuntu|src|tests|docs|requirements|pyproject|toml|gitignore|dockerfile|makefile|readme|changelog|license|contributing)$' | head -5
+        done || true
+        echo "✅ Spell check completed"

@@ -1,0 +1,267 @@
+{
+  "mcpServers": {
+    "postgres-dev": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres"],
+      "env": {
+        "POSTGRES_CONNECTION_STRING": "postgresql://user:pass@localhost:5432/fastapi_db",
+        "POSTGRES_SCHEMA": "public",
+        "QUERY_TIMEOUT": "30000",
+        "MAX_CONNECTIONS": "5",
+        "ENABLE_SSL": "false"
+      },
+      "description": "PostgreSQL database server for development environment"
+    },
+    
+    "postgres-test": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres"],
+      "env": {
+        "POSTGRES_CONNECTION_STRING": "postgresql://user:pass@localhost:5432/fastapi_test_db",
+        "POSTGRES_SCHEMA": "public",
+        "QUERY_TIMEOUT": "10000",
+        "MAX_CONNECTIONS": "3",
+        "ENABLE_SSL": "false"
+      },
+      "description": "PostgreSQL database server for testing environment"
+    },
+    
+    "http-fetch": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-fetch"],
+      "env": {
+        "ALLOWED_DOMAINS": "api.github.com,httpbin.org,jsonplaceholder.typicode.com",
+        "REQUEST_TIMEOUT": "30000",
+        "MAX_REDIRECTS": "5",
+        "USER_AGENT": "FastAPI-Development-Client/1.0"
+      },
+      "description": "HTTP client for external API integration and testing"
+    },
+    
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem"],
+      "env": {
+        "ALLOWED_DIRECTORIES": "./src,./app,./tests,./docs,./scripts,./alembic,./uploads",
+        "MAX_FILE_SIZE": "10485760",
+        "EXCLUDE_PATTERNS": "*.pyc,__pycache__,*.log,*.tmp,.env*,secrets/**",
+        "READ_ONLY_DIRECTORIES": "./docs",
+        "ENABLE_WRITE": "true"
+      },
+      "description": "Filesystem access for project files and uploads"
+    },
+    
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}",
+        "ALLOWED_REPOS": "myorg/fastapi-project,myorg/shared-libs",
+        "DEFAULT_BRANCH": "main",
+        "READ_ONLY": "false",
+        "ENABLE_ISSUES": "true",
+        "ENABLE_PULL_REQUESTS": "true"
+      },
+      "description": "GitHub integration for repository management and CI/CD"
+    },
+    
+    "python-repl": {
+      "command": "python",
+      "args": ["-m", "mcp_server_python"],
+      "env": {
+        "PYTHON_VIRTUAL_ENV": ".venv",
+        "PYTHONPATH": "./src:./app",
+        "EXECUTION_TIMEOUT": "30",
+        "MAX_MEMORY_MB": "512",
+        "ALLOWED_IMPORTS": "fastapi,sqlalchemy,pydantic,pytest,alembic,uvicorn",
+        "ENABLE_ASYNC": "true"
+      },
+      "description": "Python REPL for FastAPI development and testing"
+    },
+    
+    "redis-cache": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-redis"],
+      "env": {
+        "REDIS_URL": "redis://localhost:6379/0",
+        "CONNECTION_TIMEOUT": "5000",
+        "COMMAND_TIMEOUT": "10000",
+        "MAX_CONNECTIONS": "10",
+        "ENABLE_PUBSUB": "false"
+      },
+      "description": "Redis server for caching and session management"
+    },
+    
+    "docker": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-docker"],
+      "env": {
+        "DOCKER_HOST": "unix:///var/run/docker.sock",
+        "ALLOWED_IMAGES": "postgres:15,redis:7,nginx:alpine,python:3.11-slim",
+        "ALLOWED_OPERATIONS": "build,run,stop,logs,ps",
+        "CONTAINER_PREFIX": "fastapi-dev",
+        "AUTO_REMOVE": "true"
+      },
+      "description": "Docker integration for containerized development"
+    },
+    
+    "openapi": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-openapi"],
+      "env": {
+        "OPENAPI_SPEC_URL": "http://localhost:8000/openapi.json",
+        "API_BASE_URL": "http://localhost:8000",
+        "ENABLE_VALIDATION": "true",
+        "REQUEST_TIMEOUT": "30000",
+        "FOLLOW_REDIRECTS": "true"
+      },
+      "description": "OpenAPI specification server for API documentation and testing"
+    },
+    
+    "alembic": {
+      "command": "python",
+      "args": ["-m", "mcp_server_alembic"],
+      "env": {
+        "ALEMBIC_CONFIG": "alembic.ini",
+        "DATABASE_URL": "postgresql://user:pass@localhost:5432/fastapi_db",
+        "SCRIPT_LOCATION": "alembic",
+        "ENABLE_AUTO_GENERATE": "true",
+        "SAFE_MODE": "true"
+      },
+      "description": "Alembic database migration management"
+    },
+    
+    "logs": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-logs"],
+      "env": {
+        "LOG_DIRECTORIES": "./logs,/var/log/fastapi",
+        "LOG_PATTERNS": "*.log,*.out,*.err",
+        "MAX_FILE_SIZE": "104857600",
+        "TAIL_LINES": "1000",
+        "ENABLE_SEARCH": "true"
+      },
+      "description": "Log file monitoring and analysis"
+    },
+    
+    "monitoring": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-prometheus"],
+      "env": {
+        "PROMETHEUS_URL": "http://localhost:9090",
+        "METRICS_ENDPOINT": "http://localhost:8000/metrics",
+        "SCRAPE_INTERVAL": "15s",
+        "ENABLE_ALERTS": "false"
+      },
+      "description": "Application monitoring and metrics collection"
+    },
+    
+    "testing": {
+      "command": "python",
+      "args": ["-m", "mcp_server_pytest"],
+      "env": {
+        "TEST_DIRECTORY": "./tests",
+        "PYTEST_CONFIG": "pytest.ini",
+        "COVERAGE_THRESHOLD": "90",
+        "ENABLE_PARALLEL": "true",
+        "MAX_WORKERS": "4",
+        "ENABLE_FIXTURES": "true"
+      },
+      "description": "Automated testing and coverage analysis"
+    },
+    
+    "smtp": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-smtp"],
+      "env": {
+        "SMTP_HOST": "localhost",
+        "SMTP_PORT": "1025",
+        "SMTP_USERNAME": "",
+        "SMTP_PASSWORD": "",
+        "SMTP_USE_TLS": "false",
+        "FROM_EMAIL": "noreply@localhost",
+        "ENABLE_TEMPLATES": "true"
+      },
+      "description": "SMTP server for email functionality testing (development)"
+    },
+    
+    "s3-storage": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-s3"],
+      "env": {
+        "AWS_ACCESS_KEY_ID": "${AWS_ACCESS_KEY_ID}",
+        "AWS_SECRET_ACCESS_KEY": "${AWS_SECRET_ACCESS_KEY}",
+        "AWS_REGION": "us-east-1",
+        "S3_BUCKET": "fastapi-dev-uploads",
+        "S3_PREFIX": "uploads/",
+        "ENABLE_VERSIONING": "false"
+      },
+      "description": "S3 storage for file uploads and static assets"
+    }
+  },
+  
+  "_metadata": {
+    "framework": "fastapi",
+    "version": "1.0.0",
+    "description": "MCP server configuration for FastAPI development",
+    "environments": {
+      "development": {
+        "enabled_servers": [
+          "postgres-dev",
+          "http-fetch", 
+          "filesystem",
+          "python-repl",
+          "redis-cache",
+          "docker",
+          "openapi",
+          "alembic",
+          "logs",
+          "testing",
+          "smtp"
+        ]
+      },
+      "testing": {
+        "enabled_servers": [
+          "postgres-test",
+          "http-fetch",
+          "filesystem",
+          "python-repl",
+          "testing"
+        ]
+      },
+      "production": {
+        "enabled_servers": [
+          "postgres-prod",
+          "http-fetch",
+          "logs",
+          "monitoring",
+          "s3-storage"
+        ]
+      }
+    },
+    "dependencies": {
+      "required": [
+        "@modelcontextprotocol/server-postgres",
+        "@modelcontextprotocol/server-fetch",
+        "@modelcontextprotocol/server-filesystem"
+      ],
+      "optional": [
+        "@modelcontextprotocol/server-github",
+        "@modelcontextprotocol/server-redis",
+        "@modelcontextprotocol/server-docker",
+        "@modelcontextprotocol/server-openapi",
+        "@modelcontextprotocol/server-logs",
+        "@modelcontextprotocol/server-prometheus",
+        "@modelcontextprotocol/server-smtp",
+        "@modelcontextprotocol/server-s3"
+      ]
+    },
+    "setup_instructions": {
+      "1": "Install required MCP servers: npm install -g @modelcontextprotocol/server-postgres @modelcontextprotocol/server-fetch @modelcontextprotocol/server-filesystem",
+      "2": "Set up environment variables for database connections and API keys",
+      "3": "Configure PostgreSQL database and Redis cache if using",
+      "4": "Test MCP server connections: claude mcp list && claude mcp test postgres-dev",
+      "5": "Customize server configurations based on your specific requirements"
+    }
+  }
+}

@@ -1,0 +1,141 @@
+{
+  "mcpServers": {
+    "postgresql": {
+      "command": "uvx",
+      "args": ["mcp-server-postgres"],
+      "env": {
+        "POSTGRES_CONNECTION_STRING": "postgresql://user:password@localhost:5432/datadb"
+      }
+    },
+    "mysql": {
+      "command": "uvx",
+      "args": ["mcp-server-mysql"],
+      "env": {
+        "MYSQL_CONNECTION_STRING": "mysql://user:password@localhost:3306/datadb"
+      }
+    },
+    "sqlite": {
+      "command": "uvx",
+      "args": ["mcp-server-sqlite"],
+      "env": {
+        "SQLITE_DB_PATH": "./data/database.db"
+      }
+    },
+    "fetch": {
+      "command": "uvx",
+      "args": ["mcp-server-fetch"],
+      "env": {
+        "TIMEOUT": "60",
+        "MAX_REDIRECTS": "10",
+        "USER_AGENT": "DataScience-Research-Bot/1.0"
+      }
+    },
+    "filesystem": {
+      "command": "uvx",
+      "args": ["mcp-server-filesystem"],
+      "env": {
+        "ALLOWED_DIRECTORIES": "/data,/notebooks,/src,/models,/reports,/configs,/scripts"
+      }
+    },
+    "git": {
+      "command": "uvx",
+      "args": ["mcp-server-git"],
+      "env": {
+        "GIT_REPO_PATH": ".",
+        "GIT_LFS_ENABLED": "true"
+      }
+    },
+    "time": {
+      "command": "uvx",
+      "args": ["mcp-server-time"]
+    },
+    "brave-search": {
+      "command": "uvx",
+      "args": ["mcp-server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": ""
+      }
+    },
+    "memory": {
+      "command": "uvx",
+      "args": ["mcp-server-memory"],
+      "env": {
+        "MEMORY_BANK_SIZE": "1000"
+      }
+    },
+    "sequential-thinking": {
+      "command": "uvx",
+      "args": ["mcp-server-sequential-thinking"]
+    },
+    "python": {
+      "command": "uvx",
+      "args": ["mcp-server-python"],
+      "env": {
+        "PYTHON_EXECUTABLE": "python",
+        "ALLOWED_MODULES": "pandas,numpy,matplotlib,seaborn,plotly,sklearn,scipy,statsmodels"
+      }
+    }
+  },
+  "description": "MCP server configuration optimized for data science workflows, research, and machine learning development",
+  "notes": {
+    "database": "Configure your primary data storage (PostgreSQL for large datasets, SQLite for local development)",
+    "fetch": "HTTP client for API data sources, web scraping, and external dataset downloads with extended timeout for large files",
+    "filesystem": "File operations for data files, notebooks, models, and reports with data science directory structure",
+    "git": "Version control with Git LFS support for large datasets and model files",
+    "time": "Time utilities essential for time series analysis, experiment timing, and temporal data processing",
+    "brave-search": "Web search for research papers, documentation, dataset discovery, and troubleshooting",
+    "memory": "Persistent memory for experiment tracking, hypothesis tracking, and research notes across sessions",
+    "sequential-thinking": "Structured reasoning for complex data science problems, hypothesis formation, and methodology development",
+    "python": "Safe Python execution environment for data analysis, model training, and statistical computations",
+    "setup": [
+      "1. Copy this file to your data science project root as .mcp.json",
+      "2. Update database connection strings for your data storage needs",
+      "3. Configure Git LFS for large file handling (datasets, models)",
+      "4. Set BRAVE_API_KEY for research and documentation search",
+      "5. Adjust ALLOWED_DIRECTORIES to match your project structure",
+      "6. Configure Python server with your required data science modules",
+      "7. Test with `jupyter lab` or your preferred data science environment"
+    ],
+    "data_science_workflow": [
+      "Database servers for data ingestion and storage",
+      "Filesystem for managing datasets, notebooks, and model artifacts",
+      "Fetch server for external data sources and API integrations",
+      "Git with LFS for version control of code and large files",
+      "Time server for temporal analysis and experiment scheduling",
+      "Python server for safe code execution and analysis",
+      "Memory server for tracking experiments and hypotheses",
+      "Search server for research and documentation lookup"
+    ],
+    "research_patterns": [
+      "Use memory server to track experiment hypotheses and results",
+      "Leverage sequential-thinking for complex analytical reasoning",
+      "Use search for literature review and methodology research",
+      "Time server for scheduling and temporal data analysis",
+      "Git integration for reproducible research versioning",
+      "Python server for exploratory data analysis and prototyping"
+    ],
+    "performance_considerations": [
+      "Database connections optimized for analytical queries",
+      "Filesystem access configured for large dataset handling",
+      "Extended timeouts for large file downloads and processing",
+      "Git LFS configuration for efficient large file management",
+      "Python environment restricted to data science libraries for security"
+    ],
+    "security": [
+      "Never commit real API keys or database credentials",
+      "Use environment variables for all sensitive configuration",
+      "Restrict Python server to approved data science libraries only",
+      "Limit filesystem access to project directories",
+      "Use secure database connections with proper authentication",
+      "Configure Git LFS with appropriate access controls for large files"
+    ],
+    "data_governance": [
+      "Document all data sources and their usage permissions",
+      "Implement data lineage tracking through Git and experiment logs",
+      "Use database servers with proper access controls",
+      "Version control datasets using DVC or Git LFS",
+      "Track data transformations and feature engineering steps",
+      "Maintain audit trails for model training and deployment"
+    ]
+  }
+}

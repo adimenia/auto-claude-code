@@ -1,0 +1,117 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "uvx",
+      "args": ["mcp-server-filesystem"],
+      "env": {
+        "ALLOWED_DIRECTORIES": "/src,/tests,/docs,/configs,/scripts,/examples,/dist,/build"
+      }
+    },
+    "git": {
+      "command": "uvx",
+      "args": ["mcp-server-git"],
+      "env": {
+        "GIT_REPO_PATH": "."
+      }
+    },
+    "fetch": {
+      "command": "uvx",
+      "args": ["mcp-server-fetch"],
+      "env": {
+        "TIMEOUT": "30",
+        "MAX_REDIRECTS": "5",
+        "USER_AGENT": "CLI-Tool-Development/1.0"
+      }
+    },
+    "time": {
+      "command": "uvx",
+      "args": ["mcp-server-time"]
+    },
+    "brave-search": {
+      "command": "uvx",
+      "args": ["mcp-server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": ""
+      }
+    },
+    "memory": {
+      "command": "uvx",
+      "args": ["mcp-server-memory"],
+      "env": {
+        "MEMORY_BANK_SIZE": "500"
+      }
+    },
+    "sequential-thinking": {
+      "command": "uvx",
+      "args": ["mcp-server-sequential-thinking"]
+    },
+    "python": {
+      "command": "uvx",
+      "args": ["mcp-server-python"],
+      "env": {
+        "PYTHON_EXECUTABLE": "python",
+        "ALLOWED_MODULES": "click,typer,rich,colorama,pydantic,requests,pathlib,argparse"
+      }
+    }
+  },
+  "description": "MCP server configuration optimized for CLI tool development, testing, and distribution",
+  "notes": {
+    "filesystem": "File operations for CLI tool source code, configuration files, and build artifacts",
+    "git": "Version control integration for CLI tool development and release management",
+    "fetch": "HTTP client for downloading dependencies, external resources, and API integrations",
+    "time": "Time utilities for CLI operations, scheduling, and performance timing",
+    "brave-search": "Web search for CLI development patterns, documentation, and troubleshooting",
+    "memory": "Persistent memory for CLI development patterns, command examples, and project notes",
+    "sequential-thinking": "Structured reasoning for complex CLI logic, command design, and user experience",
+    "python": "Safe Python execution for CLI prototyping, testing, and development",
+    "setup": [
+      "1. Copy this file to your CLI tool project root as .mcp.json",
+      "2. Adjust ALLOWED_DIRECTORIES to match your project structure",
+      "3. Set BRAVE_API_KEY if using search functionality for documentation lookup",
+      "4. Configure Python server with CLI-specific modules (click, typer, rich)",
+      "5. Test with your CLI development environment",
+      "6. Remove unused servers to optimize startup time"
+    ],
+    "cli_development_workflow": [
+      "Filesystem for managing CLI source code, tests, and configuration",
+      "Git integration for version control and release management",
+      "Fetch server for external API integrations and resource downloads",
+      "Time server for CLI operation timing and performance measurement",
+      "Python server for prototyping CLI commands and testing logic",
+      "Memory server for storing CLI patterns and development notes",
+      "Search server for finding CLI best practices and documentation"
+    ],
+    "command_design": [
+      "Use memory server to track command design patterns and user feedback",
+      "Leverage sequential-thinking for complex command logic and user flow design",
+      "Use search for CLI best practices, argument parsing patterns, and UX guidelines",
+      "Time server for measuring command execution time and optimization",
+      "Python server for rapid prototyping of CLI functionality",
+      "Git integration for managing CLI tool versions and release notes"
+    ],
+    "testing_and_distribution": [
+      "Filesystem for managing test files, fixtures, and build artifacts",
+      "Git for tagging releases and managing distribution branches",
+      "Fetch server for testing HTTP-based CLI functionality",
+      "Python server for running CLI tests and validation",
+      "Time server for performance testing and benchmarking",
+      "Memory for tracking testing patterns and distribution checklists"
+    ],
+    "security": [
+      "Never commit real API keys or sensitive configuration",
+      "Restrict filesystem access to project directories only",
+      "Use environment variables for external service configurations",
+      "Limit Python server to CLI development modules only",
+      "Configure fetch server with appropriate timeout and redirect limits",
+      "Use secure practices for CLI tool distribution and packaging"
+    ],
+    "performance_optimization": [
+      "Use time server to profile CLI command execution times",
+      "Memory server for tracking performance optimization notes",
+      "Python server for testing algorithm efficiency",
+      "Filesystem for managing performance test data and results",
+      "Git for version control of performance improvements",
+      "Search for CLI performance best practices and optimization techniques"
+    ]
+  }
+}

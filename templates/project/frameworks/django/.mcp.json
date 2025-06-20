@@ -1,0 +1,409 @@
+{
+  "mcpServers": {
+    "postgres-dev": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres"],
+      "env": {
+        "POSTGRES_CONNECTION_STRING": "postgresql://user:pass@localhost:5432/django_db",
+        "POSTGRES_SCHEMA": "public",
+        "QUERY_TIMEOUT": "30000",
+        "MAX_CONNECTIONS": "5",
+        "ENABLE_SSL": "false"
+      },
+      "description": "PostgreSQL database server for Django development"
+    },
+    
+    "postgres-test": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres"],
+      "env": {
+        "POSTGRES_CONNECTION_STRING": "postgresql://user:pass@localhost:5432/django_test_db",
+        "POSTGRES_SCHEMA": "public",
+        "QUERY_TIMEOUT": "10000",
+        "MAX_CONNECTIONS": "3",
+        "ENABLE_SSL": "false"
+      },
+      "description": "PostgreSQL database server for Django testing"
+    },
+    
+    "redis-cache": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-redis"],
+      "env": {
+        "REDIS_URL": "redis://localhost:6379/1",
+        "CONNECTION_TIMEOUT": "5000",
+        "COMMAND_TIMEOUT": "10000",
+        "MAX_CONNECTIONS": "10",
+        "ENABLE_PUBSUB": "true"
+      },
+      "description": "Redis server for Django caching and sessions"
+    },
+    
+    "redis-celery": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-redis"],
+      "env": {
+        "REDIS_URL": "redis://localhost:6379/2",
+        "CONNECTION_TIMEOUT": "5000",
+        "COMMAND_TIMEOUT": "30000",
+        "MAX_CONNECTIONS": "20",
+        "ENABLE_PUBSUB": "true"
+      },
+      "description": "Redis server for Celery message broker"
+    },
+    
+    "http-fetch": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-fetch"],
+      "env": {
+        "ALLOWED_DOMAINS": "api.github.com,httpbin.org,jsonplaceholder.typicode.com",
+        "REQUEST_TIMEOUT": "30000",
+        "MAX_REDIRECTS": "5",
+        "USER_AGENT": "Django-Development-Client/1.0"
+      },
+      "description": "HTTP client for external API integration and testing"
+    },
+    
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem"],
+      "env": {
+        "ALLOWED_DIRECTORIES": "./apps,./config,./templates,./static,./media,./tests,./docs,./scripts,./locale,./fixtures",
+        "MAX_FILE_SIZE": "10485760",
+        "EXCLUDE_PATTERNS": "*.pyc,__pycache__,*.log,*.tmp,.env*,secrets/**,migrations/*.py",
+        "READ_ONLY_DIRECTORIES": "./docs,./locale",
+        "ENABLE_WRITE": "true"
+      },
+      "description": "Filesystem access for Django project files and media"
+    },
+    
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}",
+        "ALLOWED_REPOS": "myorg/django-project,myorg/shared-libs",
+        "DEFAULT_BRANCH": "main",
+        "READ_ONLY": "false",
+        "ENABLE_ISSUES": "true",
+        "ENABLE_PULL_REQUESTS": "true"
+      },
+      "description": "GitHub integration for Django project management"
+    },
+    
+    "python-repl": {
+      "command": "python",
+      "args": ["-m", "mcp_server_python"],
+      "env": {
+        "PYTHON_VIRTUAL_ENV": ".venv",
+        "PYTHONPATH": "./apps:./config",
+        "DJANGO_SETTINGS_MODULE": "config.settings.development",
+        "EXECUTION_TIMEOUT": "30",
+        "MAX_MEMORY_MB": "512",
+        "ALLOWED_IMPORTS": "django,rest_framework,celery,redis,psycopg2,factory",
+        "ENABLE_ASYNC": "true"
+      },
+      "description": "Python REPL with Django environment for development and testing"
+    },
+    
+    "django-admin": {
+      "command": "python",
+      "args": ["-m", "mcp_server_django"],
+      "env": {
+        "DJANGO_SETTINGS_MODULE": "config.settings.development",
+        "MANAGE_PY_PATH": "./manage.py",
+        "ALLOWED_COMMANDS": "runserver,shell,shell_plus,check,test,makemigrations,migrate,collectstatic,createsuperuser",
+        "SAFE_MODE": "true",
+        "ENABLE_SHELL_PLUS": "true"
+      },
+      "description": "Django management commands and admin interface integration"
+    },
+    
+    "django-templates": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-templates"],
+      "env": {
+        "TEMPLATES_DIR": "./templates",
+        "TEMPLATE_ENGINE": "django",
+        "ENABLE_VALIDATION": "true",
+        "AUTO_ESCAPE": "true",
+        "CONTEXT_PROCESSORS": "django.template.context_processors.debug,django.template.context_processors.request,django.contrib.auth.context_processors.auth,django.contrib.messages.context_processors.messages"
+      },
+      "description": "Django template rendering and validation"
+    },
+    
+    "static-files": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-static"],
+      "env": {
+        "STATIC_ROOT": "./static",
+        "STATICFILES_DIRS": "./apps/*/static,./static",
+        "MEDIA_ROOT": "./media",
+        "ENABLE_COMPRESSION": "false",
+        "SERVE_STATIC": "true"
+      },
+      "description": "Static files and media management for Django"
+    },
+    
+    "migrations": {
+      "command": "python",
+      "args": ["-m", "mcp_server_django_migrations"],
+      "env": {
+        "DJANGO_SETTINGS_MODULE": "config.settings.development",
+        "MIGRATIONS_DIR": "./apps/*/migrations",
+        "ENABLE_AUTO_GENERATE": "true",
+        "SAFE_MODE": "true",
+        "BACKUP_BEFORE_MIGRATE": "true"
+      },
+      "description": "Django database migrations management"
+    },
+    
+    "celery": {
+      "command": "python",
+      "args": ["-m", "mcp_server_celery"],
+      "env": {
+        "CELERY_APP": "config.celery:app",
+        "BROKER_URL": "redis://localhost:6379/2",
+        "RESULT_BACKEND": "redis://localhost:6379/3",
+        "WORKER_CONCURRENCY": "4",
+        "ENABLE_MONITORING": "true"
+      },
+      "description": "Celery task queue management for Django"
+    },
+    
+    "i18n": {
+      "command": "python",
+      "args": ["-m", "mcp_server_django_i18n"],
+      "env": {
+        "LOCALE_PATHS": "./locale",
+        "LANGUAGES": "en,es,fr,de",
+        "DEFAULT_LANGUAGE": "en",
+        "ENABLE_FUZZY": "true",
+        "AUTO_COMPILE": "true"
+      },
+      "description": "Django internationalization and localization management"
+    },
+    
+    "testing": {
+      "command": "python",
+      "args": ["-m", "mcp_server_django_test"],
+      "env": {
+        "DJANGO_SETTINGS_MODULE": "config.settings.testing",
+        "TEST_RUNNER": "django.test.runner.DiscoverRunner",
+        "TEST_DATABASE": "django_test_db",
+        "ENABLE_COVERAGE": "true",
+        "COVERAGE_THRESHOLD": "90",
+        "FACTORY_BOY": "true"
+      },
+      "description": "Django testing framework with coverage analysis"
+    },
+    
+    "logs": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-logs"],
+      "env": {
+        "LOG_DIRECTORIES": "./logs,/var/log/django",
+        "LOG_PATTERNS": "*.log,*.out,*.err",
+        "MAX_FILE_SIZE": "104857600",
+        "TAIL_LINES": "1000",
+        "ENABLE_SEARCH": "true",
+        "LOG_LEVELS": "DEBUG,INFO,WARNING,ERROR,CRITICAL"
+      },
+      "description": "Django application log monitoring and analysis"
+    },
+    
+    "admin-interface": {
+      "command": "python",
+      "args": ["-m", "mcp_server_django_admin"],
+      "env": {
+        "DJANGO_SETTINGS_MODULE": "config.settings.development",
+        "ADMIN_URL": "/admin/",
+        "ENABLE_ADMIN_DOCS": "true",
+        "ADMIN_SITE_HEADER": "Django Administration",
+        "ENABLE_ADMIN_HONEYPOT": "false"
+      },
+      "description": "Django admin interface integration and management"
+    },
+    
+    "monitoring": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-prometheus"],
+      "env": {
+        "PROMETHEUS_URL": "http://localhost:9090",
+        "METRICS_ENDPOINT": "http://localhost:8000/metrics/",
+        "SCRAPE_INTERVAL": "15s",
+        "ENABLE_ALERTS": "false",
+        "DJANGO_METRICS": "true"
+      },
+      "description": "Django application monitoring and metrics collection"
+    },
+    
+    "security": {
+      "command": "python",
+      "args": ["-m", "mcp_server_django_security"],
+      "env": {
+        "DJANGO_SETTINGS_MODULE": "config.settings.development",
+        "ENABLE_SECURITY_CHECKS": "true",
+        "CHECK_MIGRATIONS": "true",
+        "CHECK_TEMPLATES": "true",
+        "SECURITY_LEVEL": "development"
+      },
+      "description": "Django security checks and vulnerability scanning"
+    },
+    
+    "email": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-smtp"],
+      "env": {
+        "SMTP_HOST": "localhost",
+        "SMTP_PORT": "1025",
+        "SMTP_USERNAME": "",
+        "SMTP_PASSWORD": "",
+        "SMTP_USE_TLS": "false",
+        "FROM_EMAIL": "noreply@localhost",
+        "ENABLE_TEMPLATES": "true",
+        "TEMPLATE_ENGINE": "django"
+      },
+      "description": "SMTP server for Django email functionality testing"
+    },
+    
+    "s3-storage": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-s3"],
+      "env": {
+        "AWS_ACCESS_KEY_ID": "${AWS_ACCESS_KEY_ID}",
+        "AWS_SECRET_ACCESS_KEY": "${AWS_SECRET_ACCESS_KEY}",
+        "AWS_REGION": "us-east-1",
+        "S3_BUCKET": "django-dev-media",
+        "S3_PREFIX": "media/",
+        "ENABLE_VERSIONING": "false",
+        "DJANGO_INTEGRATION": "true"
+      },
+      "description": "S3 storage for Django media files and static assets"
+    },
+    
+    "elasticsearch": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-elasticsearch"],
+      "env": {
+        "ELASTICSEARCH_URL": "http://localhost:9200",
+        "INDEX_PREFIX": "django_dev",
+        "DEFAULT_ANALYZER": "standard",
+        "ENABLE_LOGGING": "true",
+        "TIMEOUT": "30"
+      },
+      "description": "Elasticsearch integration for Django search functionality"
+    }
+  },
+  
+  "_metadata": {
+    "framework": "django",
+    "version": "1.0.0",
+    "description": "MCP server configuration for Django development",
+    "environments": {
+      "development": {
+        "enabled_servers": [
+          "postgres-dev",
+          "redis-cache",
+          "redis-celery",
+          "http-fetch",
+          "filesystem",
+          "python-repl",
+          "django-admin",
+          "django-templates",
+          "static-files",
+          "migrations",
+          "celery",
+          "i18n",
+          "testing",
+          "logs",
+          "admin-interface",
+          "security",
+          "email"
+        ]
+      },
+      "testing": {
+        "enabled_servers": [
+          "postgres-test",
+          "filesystem",
+          "python-repl",
+          "django-admin",
+          "testing",
+          "security"
+        ]
+      },
+      "production": {
+        "enabled_servers": [
+          "postgres-prod",
+          "redis-cache",
+          "redis-celery",
+          "http-fetch",
+          "logs",
+          "monitoring",
+          "security",
+          "s3-storage"
+        ]
+      }
+    },
+    "dependencies": {
+      "required": [
+        "@modelcontextprotocol/server-postgres",
+        "@modelcontextprotocol/server-redis",
+        "@modelcontextprotocol/server-fetch",
+        "@modelcontextprotocol/server-filesystem"
+      ],
+      "optional": [
+        "@modelcontextprotocol/server-github",
+        "@modelcontextprotocol/server-templates",
+        "@modelcontextprotocol/server-static",
+        "@modelcontextprotocol/server-logs",
+        "@modelcontextprotocol/server-prometheus",
+        "@modelcontextprotocol/server-smtp",
+        "@modelcontextprotocol/server-s3",
+        "@modelcontextprotocol/server-elasticsearch"
+      ]
+    },
+    "django_specific": {
+      "management_commands": [
+        "runserver",
+        "shell",
+        "shell_plus",
+        "makemigrations",
+        "migrate",
+        "test",
+        "collectstatic",
+        "createsuperuser",
+        "loaddata",
+        "dumpdata",
+        "check",
+        "makemessages",
+        "compilemessages"
+      ],
+      "apps_structure": [
+        "accounts",
+        "core",
+        "api"
+      ],
+      "recommended_packages": [
+        "django-extensions",
+        "django-debug-toolbar",
+        "djangorestframework",
+        "django-cors-headers",
+        "celery",
+        "redis",
+        "psycopg2-binary",
+        "pillow",
+        "factory-boy"
+      ]
+    },
+    "setup_instructions": {
+      "1": "Install required MCP servers: npm install -g @modelcontextprotocol/server-postgres @modelcontextprotocol/server-redis @modelcontextprotocol/server-fetch @modelcontextprotocol/server-filesystem",
+      "2": "Set up PostgreSQL database and Redis cache",
+      "3": "Configure environment variables for database connections and Redis",
+      "4": "Test MCP server connections: claude mcp list && claude mcp test postgres-dev",
+      "5": "Run Django migrations: python manage.py migrate",
+      "6": "Create superuser: python manage.py createsuperuser",
+      "7": "Customize server configurations based on your Django project requirements"
+    }
+  }
+}

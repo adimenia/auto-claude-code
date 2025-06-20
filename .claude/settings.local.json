@@ -1,0 +1,13 @@
+{
+  "enabledMcpjsonServers": [
+    "filesystem",
+    "git",
+    "python",
+    "time"
+  ],
+  "permissions": {
+    "allow": [
+      "Bash(find:*)"
+    ]
+  }
+}

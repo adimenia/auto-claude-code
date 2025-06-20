@@ -1,0 +1,121 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "uvx",
+      "args": ["mcp-server-filesystem"],
+      "env": {
+        "ALLOWED_DIRECTORIES": "/src,/tests,/docs,/scripts,/configs,/examples,/data,/notebooks"
+      }
+    },
+    "git": {
+      "command": "uvx",
+      "args": ["mcp-server-git"],
+      "env": {
+        "GIT_REPO_PATH": "."
+      }
+    },
+    "python": {
+      "command": "uvx",
+      "args": ["mcp-server-python"],
+      "env": {
+        "PYTHON_EXECUTABLE": "python",
+        "ALLOWED_MODULES": "os,sys,json,pathlib,datetime,typing,collections,itertools,functools,math,statistics,random"
+      }
+    },
+    "time": {
+      "command": "uvx",
+      "args": ["mcp-server-time"]
+    },
+    "memory": {
+      "command": "uvx",
+      "args": ["mcp-server-memory"],
+      "env": {
+        "MEMORY_BANK_SIZE": "500"
+      }
+    },
+    "fetch": {
+      "command": "uvx",
+      "args": ["mcp-server-fetch"],
+      "env": {
+        "TIMEOUT": "30",
+        "MAX_REDIRECTS": "5",
+        "USER_AGENT": "Python-Development-Bot/1.0"
+      }
+    },
+    "brave-search": {
+      "command": "uvx",
+      "args": ["mcp-server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": ""
+      }
+    }
+  },
+  "description": "MCP server configuration for core Python development with essential tools and flexibility",
+  "notes": {
+    "filesystem": "File operations for Python project structure including source code, tests, and documentation",
+    "git": "Version control integration for Python project development and collaboration",
+    "python": "Safe Python execution environment with standard library modules for development and testing",
+    "time": "Time utilities for scheduling, logging, performance measurement, and temporal operations",
+    "memory": "Persistent memory for development patterns, code snippets, and project notes across sessions",
+    "fetch": "HTTP client for API integration, package downloads, and external resource access",
+    "brave-search": "Web search capabilities for documentation lookup, troubleshooting, and research",
+    "setup": [
+      "1. Copy this file to your Python project root as .mcp.json",
+      "2. Adjust ALLOWED_DIRECTORIES to match your specific project structure",
+      "3. Set BRAVE_API_KEY if using search functionality for documentation and research",
+      "4. Configure Python server with additional modules as needed for your project",
+      "5. Remove unused servers to optimize startup performance",
+      "6. Test configuration with your Python development environment"
+    ],
+    "python_development_workflow": [
+      "Filesystem for managing source code, tests, documentation, and project files",
+      "Git integration for version control, branching, and collaboration workflows",
+      "Python server for safe code execution, testing, and development prototyping",
+      "Time server for performance measurement, scheduling, and timestamp operations",
+      "Memory server for storing development patterns and project-specific knowledge",
+      "Fetch server for external API integration and resource downloading",
+      "Search server for finding Python documentation, best practices, and solutions"
+    ],
+    "project_patterns": [
+      "Use memory server to track coding patterns, architectural decisions, and lessons learned",
+      "Python server for rapid prototyping, testing algorithms, and exploring APIs",
+      "Filesystem for organizing project structure following Python best practices",
+      "Git for managing code versions, releases, and collaborative development",
+      "Time server for performance profiling and development milestone tracking",
+      "Fetch server for integrating with external services and downloading dependencies",
+      "Search for staying current with Python ecosystem and finding solutions"
+    ],
+    "development_lifecycle": [
+      "Project initialization: filesystem and git setup for new Python projects",
+      "Development: python server for coding, testing, and debugging",
+      "Documentation: filesystem for organizing docs, fetch for external references",
+      "Testing: python server for test execution and validation",
+      "Release: git for version tagging, fetch for distribution and publishing",
+      "Maintenance: memory for tracking issues, search for finding solutions"
+    ],
+    "flexibility_and_customization": [
+      "Core servers provide foundation for any Python project type",
+      "Easily extendable by adding specialized servers (database, framework-specific)",
+      "Python server can be customized with project-specific allowed modules",
+      "Filesystem directories can be adjusted for different project structures",
+      "Memory server helps maintain context across development sessions",
+      "Search server assists with continuous learning and problem-solving"
+    ],
+    "security": [
+      "Never commit real API keys or sensitive configuration to version control",
+      "Use environment variables for all sensitive MCP server configurations",
+      "Restrict filesystem access to project directories only",
+      "Limit Python server to safe standard library modules by default",
+      "Configure fetch server with appropriate timeout and security settings",
+      "Regular security audits of allowed modules and server configurations"
+    ],
+    "performance_optimization": [
+      "Python server with limited module scope for faster startup",
+      "Memory server sized appropriately for project complexity",
+      "Filesystem access restricted to minimize security surface",
+      "Fetch server with reasonable timeouts to prevent hanging operations",
+      "Remove unused servers to improve overall system performance",
+      "Regular cleanup of memory server and temporary files"
+    ]
+  }
+}

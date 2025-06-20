@@ -1,0 +1,25 @@
+# Claude Code Configuration Setup Tool Dependencies
+
+# Core CLI framework
+click>=8.0.0
+
+# Beautiful terminal output and basic prompts (fallback)
+rich>=13.0.0
+
+# Enhanced interactive prompts with autocomplete (primary)
+questionary>=2.0.0
+
+# JSON schema validation
+jsonschema>=4.0.0
+
+# Optional: For enhanced file/path operations
+pathlib2>=2.3.0; python_version<"3.4"
+
+# Optional: For better terminal detection
+colorama>=0.4.0; sys_platform=="win32"
+
+# Development dependencies (only install with pip install -r requirements-dev.txt)
+# pytest>=7.0.0
+# pytest-cov>=4.0.0
+# black>=22.0.0
+# mypy>=1.0.0

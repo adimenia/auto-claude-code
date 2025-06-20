@@ -1,0 +1,76 @@
+{
+  "mcpServers": {
+    "postgresql": {
+      "command": "uvx",
+      "args": ["mcp-server-postgres"],
+      "env": {
+        "POSTGRES_CONNECTION_STRING": "postgresql://user:password@localhost:5432/dbname"
+      }
+    },
+    "mysql": {
+      "command": "uvx",
+      "args": ["mcp-server-mysql"],
+      "env": {
+        "MYSQL_CONNECTION_STRING": "mysql://user:password@localhost:3306/dbname"
+      }
+    },
+    "sqlite": {
+      "command": "uvx",
+      "args": ["mcp-server-sqlite"],
+      "env": {
+        "SQLITE_DB_PATH": "./instance/app.db"
+      }
+    },
+    "fetch": {
+      "command": "uvx",
+      "args": ["mcp-server-fetch"]
+    },
+    "filesystem": {
+      "command": "uvx",
+      "args": ["mcp-server-filesystem"],
+      "env": {
+        "ALLOWED_DIRECTORIES": "/app,/templates,/static,/migrations,/tests"
+      }
+    },
+    "git": {
+      "command": "uvx",
+      "args": ["mcp-server-git"],
+      "env": {
+        "GIT_REPO_PATH": "."
+      }
+    },
+    "brave-search": {
+      "command": "uvx",
+      "args": ["mcp-server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": ""
+      }
+    },
+    "time": {
+      "command": "uvx",
+      "args": ["mcp-server-time"]
+    }
+  },
+  "description": "MCP server configuration for Flask web application development",
+  "notes": {
+    "database": "Configure appropriate database server (postgresql, mysql, or sqlite) based on your project needs",
+    "fetch": "HTTP client for testing APIs and external service integration",
+    "filesystem": "File operations within allowed project directories",
+    "git": "Git operations for version control integration",
+    "brave-search": "Web search capabilities for development research (requires API key)",
+    "time": "Time and date utilities for development and testing",
+    "setup": [
+      "1. Copy this file to your Flask project root as .mcp.json",
+      "2. Update database connection strings in env variables",
+      "3. Set BRAVE_API_KEY if using search functionality",
+      "4. Adjust ALLOWED_DIRECTORIES for filesystem server if needed",
+      "5. Remove unused servers to improve startup time"
+    ],
+    "security": [
+      "Never commit real credentials to version control",
+      "Use environment variables for sensitive data",
+      "Consider using .env files for local development",
+      "Restrict filesystem access to project directories only"
+    ]
+  }
+}
