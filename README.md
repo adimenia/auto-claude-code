@@ -37,6 +37,9 @@ python tools/setup.py
 - ✅ Comprehensive documentation
 - ✅ Interactive configuration generation
 - ✅ Easy customization and extension
+- 🆕 **Configuration validation & health checks**
+- 🆕 **Smart migration & upgrade system**
+- 🆕 **Automatic backup & restore capabilities**
 
 ## 📖 Documentation
 
@@ -53,6 +56,20 @@ python tools/setup.py
 python tools/setup.py                    # Interactive mode
 python tools/setup.py --help             # View all options
 ```
+
+### 🆕 Validation & Migration Tools
+```bash
+# Health check your configuration
+python tools/setup.py --health-check
+
+# Check for and apply upgrades
+python tools/setup.py --upgrade
+
+# Validate existing configuration
+python tools/setup.py --validate
+```
+
+See [Validation & Migration Guide](tools/VALIDATION_MIGRATION.md) for detailed documentation.
 
 
 ## 🎭 Development Modes
