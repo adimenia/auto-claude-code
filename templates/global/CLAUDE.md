@@ -98,6 +98,11 @@ Use these proven prompt patterns for better results:
 - **"Suggest improvements for maintainability"** - For refactoring guidance
 - **"Check for potential performance issues"** - For optimization opportunities
 
+### Personas
+- **/persona architect**: Analyze the code from an architectural perspective.
+- **/persona developer**: Analyze the code from a developer's perspective.
+- **/persona tester**: Analyze the code from a tester's perspective.
+
 ## File Organization Principles
 ```
 project-root/

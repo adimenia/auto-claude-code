@@ -238,6 +238,80 @@ class ClaudeSetupTool:
         config["command_library"] = command_config
         return config
     
+    def configure_personas(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        """Configure persona installation options."""
+        persona_config = {}
+        
+        if HAS_QUESTIONARY:
+            questionary.print("\n🎭 Claude Code Personas Setup", style="bold fg:#61afef")
+            questionary.print("Install pre-built personas for specialized tasks", style="fg:#6c7086")
+            
+            install_personas = questionary.confirm(
+                "Install personas to .claude/personas/?",
+                default=True
+            ).ask()
+            persona_config["install_personas"] = install_personas
+            
+            if install_personas:
+                questionary.print("✨ Personas will be available as /persona persona-name", style="fg:#98c379")
+                
+                # Persona selection
+                personas = [
+                    questionary.Choice("Architect", "architect", checked=True),
+                    questionary.Choice("Developer", "developer", checked=True),
+                    questionary.Choice("Tester", "tester", checked=True),
+                ]
+                
+                selected_personas = questionary.checkbox(
+                    "Select personas to install:",
+                    choices=personas
+                ).ask()
+                
+                persona_config["personas"] = selected_personas or []
+            
+        elif HAS_RICH:
+            console.print(f"\n[bold blue]🎭 Claude Code Personas Setup[/bold blue]")
+            console.print("[dim]Install pre-built personas for specialized tasks[/dim]")
+            
+            persona_config["install_personas"] = Confirm.ask("Install personas?", default=True)
+            
+            if persona_config["install_personas"]:
+                # Simple persona selection for Rich
+                console.print("[bold]Available personas:[/bold]")
+                console.print("1. Architect  2. Developer  3. Tester")
+                
+                personas_input = Prompt.ask(
+                    "Select personas (comma-separated numbers, default: all)",
+                    default="1,2,3"
+                )
+                
+                try:
+                    persona_map = {
+                        "1": "architect", "2": "developer", "3": "tester"
+                    }
+                    selected_numbers = [n.strip() for n in personas_input.split(",")]
+                    persona_config["personas"] = [persona_map[n] for n in selected_numbers if n in persona_map]
+                except:
+                    persona_config["personas"] = ["architect", "developer", "tester"]
+        
+        else:
+            print("\n🎭 Claude Code Personas Setup")
+            print("Install pre-built personas for specialized tasks")
+            
+            install_personas = input("Install personas? (Y/n): ").strip().lower() not in ['n', 'no']
+            persona_config["install_personas"] = install_personas
+            
+            if install_personas:
+                print("Personas: architect, developer, tester")
+                personas_input = input("Select personas (comma-separated, default: all): ").strip()
+                if personas_input:
+                    persona_config["personas"] = [p.strip() for p in personas_input.split(",")]
+                else:
+                    persona_config["personas"] = ["architect", "developer", "tester"]
+        
+        config["personas"] = persona_config
+        return config
+    
     def install_command_library(self, config: Dict[str, Any], target_dir: Path):
         """Install command library based on configuration."""
         command_config = config.get("command_library", {})
@@ -261,18 +335,56 @@ class ClaudeSetupTool:
             categories = command_config.get("categories", [])
             self.install_project_commands(config, target_dir, categories)
         
+    def install_personas(self, config: Dict[str, Any], target_dir: Path):
+        """Install personas based on configuration."""
+        persona_config = config.get("personas", {})
+        
+        if not persona_config or not persona_config.get("install_personas", False):
+            return
+        
+        if HAS_QUESTIONARY:
+            questionary.print("\n🎭 Installing personas...", style="fg:#6c7086")
+        elif HAS_RICH:
+            console.print("\n[dim]🎭 Installing personas...[/dim]")
+        else:
+            print("\n🎭 Installing personas...")
+        
+        personas_to_install = persona_config.get("personas", [])
+        source_personas_dir = self.repo_root / "templates" / "personas"
+        target_personas_dir = target_dir / ".claude" / "personas"
+        target_personas_dir.mkdir(parents=True, exist_ok=True)
+        
+        installed_count = 0
+        for persona_name in personas_to_install:
+            source_file = source_personas_dir / f"{persona_name}.md"
+            target_file = target_personas_dir / f"{persona_name}.md"
+            if source_file.exists() and not target_file.exists():
+                shutil.copy2(source_file, target_file)
+                installed_count += 1
+        
+        if installed_count > 0:
+            if HAS_QUESTIONARY:
+                questionary.print(f"✅ Installed {installed_count} personas to .claude/personas/", style="fg:#98c379")
+                questionary.print("   Usage: /persona persona-name", style="fg:#6c7086")
+            elif HAS_RICH:
+                console.print(f"[green]✅ Installed {installed_count} personas[/green]")
+                console.print("[dim]   Usage: /persona persona-name[/dim]")
+            else:
+                print(f"✅ Installed {installed_count} personas to .claude/personas/")
+                print("   Usage: /persona persona-name")
+        
     def _get_recommended_servers(self, framework: str) -> List[str]:
         """Get recommended MCP servers for framework."""
         recommendations = {
-            "fastapi": ["postgresql", "http", "filesystem"],
-            "django": ["postgresql", "http", "filesystem"],
-            "flask": ["sqlite", "http", "filesystem"],
-            "data-science": ["filesystem", "http"],
-            "cli-tool": ["filesystem"],
-            "web-scraping": ["http", "filesystem"],
-            "core": ["filesystem"]
+            "fastapi": ["postgresql", "fetch", "context7", "puppeteer", "magic"],
+            "django": ["postgresql", "fetch", "context7", "puppeteer", "magic"],
+            "flask": ["sqlite", "fetch", "context7", "puppeteer", "magic"],
+            "data-science": ["context7", "puppeteer", "magic"],
+            "cli-tool": ["filesystem", "context7", "puppeteer", "magic"],
+            "web-scraping": ["fetch", "filesystem", "context7", "puppeteer", "magic"],
+            "core": ["filesystem", "context7", "puppeteer", "magic"]
         }
-        return recommendations.get(framework, ["filesystem", "http"])
+        return recommendations.get(framework, ["filesystem", "context7", "puppeteer", "magic"])
     
     def install_global_commands(self, config: Dict[str, Any]):
         """Install commands to user's global directory."""
@@ -303,15 +415,23 @@ class ClaudeSetupTool:
                         shutil.copy2(command_file, target_file)
                         installed_count += 1
         
-        if HAS_QUESTIONARY:
-            questionary.print(f"✅ Installed {installed_count} global commands to ~/.claude/commands/", style="fg:#98c379")
-            questionary.print("   Usage: /user:command-name", style="fg:#6c7086")
-        elif HAS_RICH:
-            console.print(f"[green]✅ Installed {installed_count} global commands[/green]")
-            console.print("[dim]   Usage: /user:command-name[/dim]")
+        if installed_count > 0:
+            if HAS_QUESTIONARY:
+                questionary.print(f"✅ Installed {installed_count} global commands to ~/.claude/commands/", style="fg:#98c379")
+                questionary.print("   Usage: /user:command-name", style="fg:#6c7086")
+            elif HAS_RICH:
+                console.print(f"[green]✅ Installed {installed_count} global commands[/green]")
+                console.print("[dim]   Usage: /user:command-name[/dim]")
+            else:
+                print(f"✅ Installed {installed_count} global commands to ~/.claude/commands/")
+                print("   Usage: /user:command-name")
         else:
-            print(f"✅ Installed {installed_count} global commands to ~/.claude/commands/")
-            print("   Usage: /user:command-name")
+            if HAS_QUESTIONARY:
+                questionary.print("✅ Global commands are already up to date.", style="fg:#98c379")
+            elif HAS_RICH:
+                console.print("[green]✅ Global commands are already up to date.[/green]")
+            else:
+                print("✅ Global commands are already up to date.")
     def install_project_commands(self, config: Dict[str, Any], target_dir: Path, categories: List[str]):
         """Install project-specific commands."""
         project_commands_dir = target_dir / ".claude" / "commands"
@@ -456,22 +576,28 @@ class ClaudeSetupTool:
             if HAS_QUESTIONARY:
                 questionary.print(f"⚠️ Missing MCP servers: {', '.join(missing_servers)}", style="fg:#f9e2af")
                 
-                show_install = questionary.confirm(
-                    "Show installation instructions?",
+                install_missing = questionary.confirm(
+                    "Automatically install missing MCP servers?",
                     default=True
                 ).ask()
                 
-                if show_install:
+                if install_missing:
+                    self._install_missing_mcp_servers(missing_servers)
+                else:
                     self._show_installation_instructions(missing_servers)
             elif HAS_RICH:
                 console.print(f"[yellow]⚠️ Missing MCP servers: {', '.join(missing_servers)}[/yellow]")
-                show_install = Confirm.ask("Show installation instructions?", default=True)
-                if show_install:
+                install_missing = Confirm.ask("Automatically install missing MCP servers?", default=True)
+                if install_missing:
+                    self._install_missing_mcp_servers(missing_servers)
+                else:
                     self._show_installation_instructions(missing_servers)
             else:
                 print(f"⚠️ Missing MCP servers: {', '.join(missing_servers)}")
-                show_install = input("Show installation instructions? (Y/n): ").strip().lower() not in ['n', 'no']
-                if show_install:
+                install_missing = input("Automatically install missing MCP servers? (Y/n): ").strip().lower() not in ['n', 'no']
+                if install_missing:
+                    self._install_missing_mcp_servers(missing_servers)
+                else:
                     self._show_installation_instructions(missing_servers)
         else:
             if HAS_QUESTIONARY:
@@ -489,10 +615,9 @@ class ClaudeSetupTool:
             "sqlite": "@modelcontextprotocol/server-sqlite", 
             "fetch": "@modelcontextprotocol/server-fetch",
             "filesystem": "@modelcontextprotocol/server-filesystem",
-            "git": "@modelcontextprotocol/server-git",
-            "python": "@modelcontextprotocol/server-python",
-            "memory": "@modelcontextprotocol/server-memory",
-            "time": "@modelcontextprotocol/server-time",
+            "context7": "@upstash/context7-mcp",
+            "puppeteer": "puppeteer-mcp-server",
+            "magic": "@magicuidesign/mcp",
             "brave-search": "@modelcontextprotocol/server-brave-search"
         }
         
@@ -519,10 +644,9 @@ class ClaudeSetupTool:
             "sqlite": "npm install -g @modelcontextprotocol/server-sqlite",
             "fetch": "npm install -g @modelcontextprotocol/server-fetch",
             "filesystem": "npm install -g @modelcontextprotocol/server-filesystem",
-            "git": "npm install -g @modelcontextprotocol/server-git",
-            "python": "npm install -g @modelcontextprotocol/server-python",
-            "memory": "npm install -g @modelcontextprotocol/server-memory",
-            "time": "npm install -g @modelcontextprotocol/server-time",
+            "context7": "npm install -g @upstash/context7-mcp",
+            "puppeteer": "npm install -g puppeteer-mcp-server",
+            "magic": "npm install -g @magicuidesign/mcp",
             "brave-search": "npm install -g @modelcontextprotocol/server-brave-search"
         }
         
@@ -547,6 +671,87 @@ class ClaudeSetupTool:
                     print(f"  {server}: {instructions[server]}")
                 else:
                     print(f"  {server}: Installation method unknown")
+    
+    def _install_missing_mcp_servers(self, servers: List[str]):
+        """Install missing MCP servers using npm."""
+        if not servers:
+            return
+
+        if HAS_QUESTIONARY:
+            questionary.print("\n📦 Installing missing MCP servers...", style="bold")
+        elif HAS_RICH:
+            console.print("\n[bold]📦 Installing missing MCP servers...[/bold]")
+        else:
+            print("\n📦 Installing missing MCP servers...")
+
+        server_packages = {
+            "postgresql": "@modelcontextprotocol/server-postgres",
+            "mysql": "@modelcontextprotocol/server-mysql",
+            "sqlite": "@modelcontextprotocol/server-sqlite", 
+            "fetch": "@modelcontextprotocol/server-fetch",
+            "filesystem": "@modelcontextprotocol/server-filesystem",
+            "context7": "@upstash/context7-mcp",
+            "puppeteer": "puppeteer-mcp-server",
+            "magic": "@magicuidesign/mcp",
+            "brave-search": "@modelcontextprotocol/server-brave-search"
+        }
+
+        for server in servers:
+            package_name = server_packages.get(server)
+            if not package_name:
+                if HAS_QUESTIONARY:
+                    questionary.print(f"  {server}: Unknown package name, skipping.", style="fg:#f9e2af")
+                elif HAS_RICH:
+                    console.print(f"  [yellow]{server}[/yellow]: Unknown package name, skipping.")
+                else:
+                    print(f"  {server}: Unknown package name, skipping.")
+                continue
+
+            install_command = f"npm install -g {package_name}"
+            if HAS_QUESTIONARY:
+                questionary.print(f"  Installing {server} ({package_name})...", style="fg:#6c7086")
+            elif HAS_RICH:
+                console.print(f"  [dim]Installing {server} ({package_name})...[/dim]")
+            else:
+                print(f"  Installing {server} ({package_name})...")
+
+            try:
+                import subprocess
+                result = subprocess.run(
+                    install_command,
+                    shell=True,
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                    timeout=300 # 5 minutes timeout for installation
+                )
+                if HAS_QUESTIONARY:
+                    questionary.print(f"  ✅ {server} installed successfully.", style="fg:#98c379")
+                elif HAS_RICH:
+                    console.print(f"  [green]✅ {server} installed successfully.[/green]")
+                else:
+                    print(f"  ✅ {server} installed successfully.")
+            except subprocess.CalledProcessError as e:
+                if HAS_QUESTIONARY:
+                    questionary.print(f"  ❌ Failed to install {server}: {e.stderr}", style="fg:#f38ba8")
+                elif HAS_RICH:
+                    console.print(f"  [red]❌ Failed to install {server}: {e.stderr}[/red]")
+                else:
+                    print(f"  ❌ Failed to install {server}: {e.stderr}")
+            except subprocess.TimeoutExpired:
+                if HAS_QUESTIONARY:
+                    questionary.print(f"  ❌ Installation of {server} timed out.", style="fg:#f38ba8")
+                elif HAS_RICH:
+                    console.print(f"  [red]❌ Installation of {server} timed out.[/red]")
+                else:
+                    print(f"  ❌ Installation of {server} timed out.")
+            except Exception as e:
+                if HAS_QUESTIONARY:
+                    questionary.print(f"  ❌ An unexpected error occurred during {server} installation: {e}", style="fg:#f38ba8")
+                elif HAS_RICH:
+                    console.print(f"  [red]❌ An unexpected error occurred during {server} installation: {e}[/red]")
+                else:
+                    print(f"  ❌ An unexpected error occurred during {server} installation: {e}")
     def get_default_projects_dir(self):
         """Get smart default for project creation."""
         home = Path.home()
@@ -642,6 +847,9 @@ class ClaudeSetupTool:
             # NEW: Configure command library
             config = self.configure_command_library(config, mode)
             
+            # NEW: Configure personas
+            config = self.configure_personas(config)
+            
             # Validate MCP servers
             #self.validate_mcp_servers(config["mcp_servers"])
             
@@ -657,6 +865,14 @@ class ClaudeSetupTool:
                     validate=lambda x: Path(x).parent.exists() or "Parent directory must exist"
                 ).ask()
                 target_dir = Path(path) if path else self.current_dir
+                
+                if target_dir.name != config["project_name"]:
+                    create_subdir = questionary.confirm(
+                        f'Create a subdirectory named \'{config["project_name"]}\' in this location?'
+                    ).ask()
+                    if create_subdir:
+                        target_dir = target_dir / config["project_name"]
+
             elif HAS_RICH:
                 use_current = Confirm.ask(
                     f"Create configuration in current directory ({self.current_dir})?",
@@ -683,6 +899,9 @@ class ClaudeSetupTool:
             
             # NEW: Install command library
             self.install_command_library(config, target_dir)
+            
+            # NEW: Install personas
+            self.install_personas(config, target_dir)
             
             # NEW: List available commands
             self.list_available_commands(target_dir)
@@ -1039,18 +1258,18 @@ class ClaudeSetupTool:
     def configure_mcp_servers(self, config: Dict[str, Any], framework: str, mode: str):
         """Configure MCP servers based on framework and mode."""
         default_servers = {
-            "core": ["filesystem", "git", "python", "time"],
-            "fastapi": ["postgresql", "fetch", "git", "time"],
-            "django": ["postgresql", "fetch", "git", "time"],
-            "flask": ["postgresql", "fetch", "git", "time"],
-            "data-science": ["postgresql", "python", "memory", "git", "time"],
-            "cli-tool": ["filesystem", "git", "python", "time"],
-            "web-scraping": ["fetch", "postgresql", "filesystem", "git", "time"]
+            "core": ["filesystem", "context7", "puppeteer", "magic"],
+            "fastapi": ["postgresql", "fetch", "context7", "puppeteer", "magic"],
+            "django": ["postgresql", "fetch", "context7", "puppeteer", "magic"],
+            "flask": ["postgresql", "fetch", "context7", "puppeteer", "magic"],
+            "data-science": ["postgresql", "context7", "puppeteer", "magic"],
+            "cli-tool": ["filesystem", "context7", "puppeteer", "magic"],
+            "web-scraping": ["fetch", "postgresql", "filesystem", "context7", "puppeteer", "magic"]
         }
         
         available_servers = [
             "postgresql", "mysql", "sqlite", "fetch", "filesystem", 
-            "git", "python", "memory", "time", "brave-search"
+            "context7", "puppeteer", "magic", "brave-search"
         ]
         
         recommended = default_servers.get(framework, [])
@@ -1247,13 +1466,30 @@ class ClaudeSetupTool:
         try:
             mcp_config = json.loads(content)
             
+            # New MCP server configurations
+            new_mcp_servers = {
+                "context7": {
+                    "command": "npx",
+                    "args": ["-y", "@upstash/context7-mcp"]
+                },
+                "puppeteer": {
+                    "command": "npx",
+                    "args": ["-y", "puppeteer-mcp-server"],
+                    "env": {}
+                },
+                "magic": {
+                    "command": "npx",
+                    "args": ["-y", "@magicuidesign/mcp@latest"]
+                }
+            }
+            
             # Filter servers based on selection
             selected_servers = config.get("mcp_servers", [])
             filtered_servers = {}
             
             for server_name in selected_servers:
-                if server_name in mcp_config.get("mcpServers", {}):
-                    filtered_servers[server_name] = mcp_config["mcpServers"][server_name]
+                if server_name in new_mcp_servers:
+                    filtered_servers[server_name] = new_mcp_servers[server_name]
             
             mcp_config["mcpServers"] = filtered_servers
             
@@ -1475,6 +1711,9 @@ class ClaudeSetupTool:
             if command_config.get("install_project"):
                 questionary.print("  • .claude/commands/ - Project command library", style="fg:#6c7086")
             
+            if config.get("personas", {}).get("install_personas"):
+                questionary.print("  • .claude/personas/ - Persona library", style="fg:#6c7086")
+            
             # Command library summary
             if command_config.get("install_global") or command_config.get("install_project"):
                 questionary.print("\n🔧 Command Library Installed:", style="bold fg:#61afef")
@@ -1490,7 +1729,7 @@ class ClaudeSetupTool:
             # Next steps
             questionary.print("\n🚀 Next Steps:", style="bold")
             questionary.print("  1. Review CLAUDE.md for project-specific guidance", style="fg:#6c7086")
-            questionary.print("  2. Install MCP servers (if any were missing)", style="fg:#6c7086")
+            questionary.print("  2. MCP servers installed (if missing)", style="fg:#6c7086")
             questionary.print("  3. Start Claude Code: claude", style="fg:#6c7086")
             questionary.print("  4. Try a command: /project:create-feature or /user:check-all", style="fg:#6c7086")
             questionary.print("  5. Let Claude follow CLAUDE.md to set up your project!", style="fg:#6c7086")
