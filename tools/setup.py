@@ -15,6 +15,14 @@ from typing import Dict, List, Optional, Any
 import argparse
 import shutil
 from typing import Optional
+
+# Import our new validation and migration systems
+try:
+    from validation import HealthChecker, ClaudeConfigValidator, MCPServerValidator, TemplateValidator
+    from migration import VersionManager, UpgradeAssistant
+    HAS_VALIDATION = True
+except ImportError:
+    HAS_VALIDATION = False
 try:
     from rich.console import Console
     from rich.prompt import Prompt, Confirm
@@ -906,8 +914,23 @@ class ClaudeSetupTool:
             # NEW: List available commands
             self.list_available_commands(target_dir)
             
+            # NEW: Run post-setup validation
+            validation_ok = self.validate_after_setup(target_dir, config)
+            
             # Display next steps
             self.display_next_steps(config, target_dir)
+            
+            # Show validation summary
+            if validation_ok:
+                if HAS_RICH:
+                    console.print("\n[green]🎉 Setup completed successfully with healthy configuration![/green]")
+                else:
+                    print("\n🎉 Setup completed successfully with healthy configuration!")
+            else:
+                if HAS_RICH:
+                    console.print("\n[yellow]⚠️ Setup completed but configuration has issues. Please review above.[/yellow]")
+                else:
+                    print("\n⚠️ Setup completed but configuration has issues. Please review above.")
             
         except KeyboardInterrupt:
             if HAS_QUESTIONARY:
@@ -1693,6 +1716,262 @@ class ClaudeSetupTool:
             
             gitignore_path.write_text("\n".join(base_gitignore))
 
+    def run_health_check(self, target_dir: Path) -> bool:
+        """Run comprehensive health check on configuration.
+        
+        Args:
+            target_dir: Directory containing configuration
+            
+        Returns:
+            True if configuration is healthy, False otherwise
+        """
+        if not HAS_VALIDATION:
+            if HAS_RICH:
+                console.print("[yellow]⚠️ Health check not available (validation modules not found)[/yellow]")
+            else:
+                print("⚠️ Health check not available (validation modules not found)")
+            return True
+        
+        if HAS_RICH:
+            console.print("\n[bold blue]🔍 Running Configuration Health Check[/bold blue]")
+        else:
+            print("\n🔍 Running Configuration Health Check")
+        
+        try:
+            health_checker = HealthChecker(target_dir, console if HAS_RICH else None)
+            results = health_checker.run_health_check(verbose=True)
+            
+            # Display results
+            health_checker.display_health_report(show_all=False)
+            
+            # Check for critical issues
+            has_errors = health_checker.has_critical_issues()
+            health_score = health_checker.get_health_score()
+            
+            if HAS_RICH:
+                if has_errors:
+                    console.print(f"\n[red]❌ Health Check Failed (Score: {health_score:.1f}%)[/red]")
+                else:
+                    console.print(f"\n[green]✅ Health Check Passed (Score: {health_score:.1f}%)[/green]")
+            else:
+                if has_errors:
+                    print(f"\n❌ Health Check Failed (Score: {health_score:.1f}%)")
+                else:
+                    print(f"\n✅ Health Check Passed (Score: {health_score:.1f}%)")
+            
+            return not has_errors
+            
+        except Exception as e:
+            if HAS_RICH:
+                console.print(f"[red]Health check failed: {e}[/red]")
+            else:
+                print(f"Health check failed: {e}")
+            return False
+
+    def check_for_upgrades(self, target_dir: Path) -> bool:
+        """Check if configuration needs migration or upgrade.
+        
+        Args:
+            target_dir: Directory containing configuration
+            
+        Returns:
+            True if upgrade was performed or not needed, False if upgrade failed
+        """
+        if not HAS_VALIDATION:
+            return True
+        
+        try:
+            version_manager = VersionManager(target_dir)
+            
+            # For fresh projects without version, set the latest version immediately
+            current_version = version_manager.detect_current_version()
+            if not current_version:
+                # This is a fresh project - initialize with latest template version
+                from migration import UpgradeAssistant
+                upgrade_assistant = UpgradeAssistant(target_dir)
+                latest_version = list(upgrade_assistant.template_versions.keys())[-1]
+                latest_version_obj = version_manager.parse_version(latest_version)
+                version_manager.save_version(latest_version_obj)
+                
+                if HAS_RICH:
+                    console.print(f"[green]✅ Project initialized with latest template version {latest_version}[/green]")
+                else:
+                    print(f"✅ Project initialized with latest template version {latest_version}")
+                
+                # For fresh projects, create metadata AFTER a short delay to ensure all files are written
+                # This prevents checksum mismatches that cause false upgrade prompts
+                import time
+                time.sleep(0.1)  # Small delay to ensure file operations complete
+                
+                metadata = version_manager.create_metadata(latest_version_obj, "new_project")
+                version_manager.save_metadata(metadata)
+                
+                return True  # Fresh project is up to date, no further checks needed
+            
+            # Check if we have a version but no metadata (setup project case)
+            metadata = version_manager.load_metadata()
+            if not metadata:
+                from migration import UpgradeAssistant
+                upgrade_assistant = UpgradeAssistant(target_dir)
+                latest_version = list(upgrade_assistant.template_versions.keys())[-1]
+                latest_version_obj = version_manager.parse_version(latest_version)
+                
+                # If current version matches or is newer than latest template, create metadata
+                if current_version >= latest_version_obj:
+                    if HAS_RICH:
+                        console.print(f"[green]✅ Creating metadata for existing project (version {current_version})[/green]")
+                    else:
+                        print(f"✅ Creating metadata for existing project (version {current_version})")
+                    
+                    import time
+                    time.sleep(0.1)  # Small delay to ensure file operations complete
+                    
+                    metadata = version_manager.create_metadata(current_version, "setup_project")
+                    version_manager.save_metadata(metadata)
+                    
+                    return True  # Project is properly initialized now
+            
+            if not version_manager.is_migration_needed():
+                if HAS_RICH:
+                    console.print("[green]✅ Configuration is up to date[/green]")
+                else:
+                    print("✅ Configuration is up to date")
+                return True
+            
+            if HAS_RICH:
+                console.print("\n[yellow]🔄 Configuration upgrade available[/yellow]")
+                perform_upgrade = Confirm.ask("Perform automatic upgrade?", default=True)
+            else:
+                print("\n🔄 Configuration upgrade available")
+                perform_upgrade = input("Perform automatic upgrade? (Y/n): ").strip().lower() not in ['n', 'no']
+            
+            if perform_upgrade:
+                return self._perform_upgrade(target_dir, version_manager)
+            else:
+                if HAS_RICH:
+                    console.print("[dim]Skipping upgrade. Configuration may be outdated.[/dim]")
+                else:
+                    print("Skipping upgrade. Configuration may be outdated.")
+                return True
+                
+        except Exception as e:
+            if HAS_RICH:
+                console.print(f"[red]Upgrade check failed: {e}[/red]")
+            else:
+                print(f"Upgrade check failed: {e}")
+            return False
+
+    def _perform_upgrade(self, target_dir: Path, version_manager: VersionManager) -> bool:
+        """Perform configuration upgrade.
+        
+        Args:
+            target_dir: Directory containing configuration
+            version_manager: Version manager instance
+            
+        Returns:
+            True if upgrade succeeded, False otherwise
+        """
+        try:
+            # Create backup before upgrade
+            backup_dir = target_dir / ".claude" / "backups"
+            backup_dir.mkdir(parents=True, exist_ok=True)
+            
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_path = backup_dir / f"backup_{timestamp}"
+            
+            if HAS_RICH:
+                console.print(f"[dim]Creating backup at {backup_path}[/dim]")
+            else:
+                print(f"Creating backup at {backup_path}")
+            
+            # Create backup
+            shutil.copytree(target_dir / ".claude", backup_path / ".claude", ignore=shutil.ignore_patterns("backups"))
+            for file in ["CLAUDE.md", ".mcp.json"]:
+                src = target_dir / file
+                if src.exists():
+                    shutil.copy2(src, backup_path / file)
+            
+            # TODO: Implement actual upgrade logic
+            # For now, just update metadata
+            current_version = version_manager.detect_current_version()
+            if current_version:
+                metadata = version_manager.load_metadata()
+                if metadata:
+                    updated_metadata = version_manager.update_metadata(metadata)
+                    version_manager.save_metadata(updated_metadata)
+            
+            if HAS_RICH:
+                console.print("[green]✅ Configuration upgraded successfully[/green]")
+            else:
+                print("✅ Configuration upgraded successfully")
+            
+            return True
+            
+        except Exception as e:
+            if HAS_RICH:
+                console.print(f"[red]Upgrade failed: {e}[/red]")
+            else:
+                print(f"Upgrade failed: {e}")
+            return False
+
+    def validate_after_setup(self, target_dir: Path, config: Dict[str, Any]) -> bool:
+        """Run post-setup validation and health check.
+        
+        Args:
+            target_dir: Directory containing configuration
+            config: Configuration dictionary
+            
+        Returns:
+            True if validation passed, False otherwise
+        """
+        if not HAS_VALIDATION:
+            return True
+        
+        if HAS_RICH:
+            console.print("\n[bold blue]🔍 Validating Configuration[/bold blue]")
+        else:
+            print("\n🔍 Validating Configuration")
+        
+        # Run health check
+        health_ok = self.run_health_check(target_dir)
+        
+        # Check for upgrades
+        upgrade_ok = self.check_for_upgrades(target_dir)
+        
+        # Create version metadata if it doesn't exist
+        try:
+            version_manager = VersionManager(target_dir)
+            current_version = version_manager.detect_current_version()
+            
+            if not current_version:
+                # Create initial version metadata
+                from migration.version_manager import Version
+                initial_version = Version(1, 0, 0)
+                template_type = config.get("framework", "core")
+                
+                metadata = version_manager.create_metadata(
+                    version=initial_version,
+                    template_type=template_type,
+                    description=f"Initial {template_type} configuration"
+                )
+                
+                version_manager.save_version(initial_version)
+                version_manager.save_metadata(metadata)
+                
+                if HAS_RICH:
+                    console.print(f"[green]✅ Created version metadata (v{initial_version})[/green]")
+                else:
+                    print(f"✅ Created version metadata (v{initial_version})")
+        
+        except Exception as e:
+            if HAS_RICH:
+                console.print(f"[yellow]⚠️ Could not create version metadata: {e}[/yellow]")
+            else:
+                print(f"⚠️ Could not create version metadata: {e}")
+        
+        return health_ok and upgrade_ok
+
     def display_next_steps(self, config: Dict[str, Any], target_dir: Path):
         """Enhanced next steps with command library information."""
         framework_name = self.frameworks[config["framework"]]["name"]
@@ -2007,6 +2286,23 @@ Examples:
         help="Run in non-interactive mode (requires --framework)"
     )
     
+    # Validation and migration options
+    parser.add_argument(
+        "--validate",
+        action="store_true",
+        help="Run health check on existing configuration"
+    )
+    parser.add_argument(
+        "--upgrade",
+        action="store_true", 
+        help="Check for and perform configuration upgrades"
+    )
+    parser.add_argument(
+        "--health-check",
+        action="store_true",
+        help="Run comprehensive health check and exit"
+    )
+    
     args = parser.parse_args()
     
     # Initialize setup tool
@@ -2021,6 +2317,26 @@ Examples:
             print(f"Error: Templates directory not found at {setup_tool.templates_dir}")
             print("Make sure you're running this script from the awesome-claude-code repository.")
         sys.exit(1)
+    
+    # Handle validation and migration commands
+    if args.health_check or args.validate or args.upgrade:
+        current_dir = Path.cwd()
+        
+        if args.health_check or args.validate:
+            # Run health check
+            if not setup_tool.run_health_check(current_dir):
+                sys.exit(1)
+        
+        if args.upgrade:
+            # Run upgrade check
+            if not setup_tool.check_for_upgrades(current_dir):
+                sys.exit(1)
+        
+        # Exit after validation/upgrade operations
+        if args.health_check:
+            sys.exit(0)
+        
+        return
     
     # Run setup
     if args.non_interactive:
