@@ -10,7 +10,7 @@
 ### Interactive Setup (Recommended)
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/auto-claude-code.git
+git clone https://github.com/adimenia/auto-claude-code.git
 cd auto-claude-code
 
 # Run the interactive setup tool
