@@ -1259,17 +1259,19 @@ class ClaudeSetupTool:
         # Project name - ADD QUESTIONARY TIER
         if HAS_QUESTIONARY:
             suggestions = self._get_project_name_suggestions()
+            # Use framework-based default instead of directory-based suggestions
+            framework_default = "my_project" if framework == "core" else f"my_{framework.replace('-', '_')}_project"
             config["project_name"] = questionary.autocomplete(
                 "📝 Project name:",
                 choices=suggestions,
-                default=suggestions[0] if suggestions else f"my-{framework}-project",
+                default=framework_default,
                 validate=lambda x: len(x.strip()) > 0 or "Project name cannot be empty"
-            ).ask() or f"my-{framework}-project"
+            ).ask() or framework_default
         elif HAS_RICH:
-            default_name = f"my-{framework}-project" if framework != "core" else "my-python-project"
+            default_name = "my_project" if framework == "core" else f"my_{framework.replace('-', '_')}_project"
             config["project_name"] = Prompt.ask("Project name", default=default_name)
         else:
-            default_name = f"my-{framework}-project" if framework != "core" else "my-python-project"
+            default_name = "my_project" if framework == "core" else f"my_{framework.replace('-', '_')}_project"
             config["project_name"] = input(f"Project name (default: {default_name}): ").strip()
             if not config["project_name"]:
                 config["project_name"] = default_name
@@ -2221,7 +2223,7 @@ Your {framework_name} project is configured for team collaboration.
             config = {
                 "framework": args.framework,
                 "mode": mode,
-                "project_name": args.project_name or (f"my-{args.framework}-project" if args.framework != "core" else "my-python-project"),
+                "project_name": args.project_name or ("my_project" if args.framework == "core" else f"my_{args.framework.replace('-', '_')}_project"),
                 "database": args.database or ("sqlite" if mode == "solo" else "postgresql"),
                 "environment": args.environment or "development",
                 "mcp_servers": args.mcp_servers.split(",") if args.mcp_servers else [],
