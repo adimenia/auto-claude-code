@@ -9,6 +9,7 @@ Supports FastAPI, Django, Flask, Data Science, CLI Tool, and Web Scraping projec
 import json
 import os
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Any
@@ -433,12 +434,12 @@ class ClaudeSetupTool:
     def _get_recommended_servers(self, framework: str) -> List[str]:
         """Get recommended MCP servers for framework."""
         recommendations = {
-            "fastapi": ["postgresql", "fetch", "context7", "puppeteer", "magic"],
-            "django": ["postgresql", "fetch", "context7", "puppeteer", "magic"],
-            "flask": ["sqlite", "fetch", "context7", "puppeteer", "magic"],
-            "data-science": ["context7", "puppeteer", "magic"],
+            "fastapi": ["postgresql", "filesystem", "context7", "puppeteer", "magic"],
+            "django": ["postgresql", "filesystem", "context7", "puppeteer", "magic"],
+            "flask": ["sqlite", "filesystem", "context7", "puppeteer", "magic"],
+            "data-science": ["filesystem", "context7", "puppeteer", "magic"],
             "cli-tool": ["filesystem", "context7", "puppeteer", "magic"],
-            "web-scraping": ["fetch", "filesystem", "context7", "puppeteer", "magic"],
+            "web-scraping": ["filesystem", "context7", "puppeteer", "magic"],
             "core": ["filesystem", "context7", "puppeteer", "magic"]
         }
         return recommendations.get(framework, ["filesystem", "context7", "puppeteer", "magic"])
@@ -612,10 +613,50 @@ class ClaudeSetupTool:
                 print(f"   {cmd}")
             print("\n💡 Use these commands in Claude Code to automate your workflow!")
     
-    def validate_mcp_servers(self, selected_servers: List[str]):
+    def validate_mcp_servers(self, selected_servers: List[str], config: Dict[str, Any] = None):
         """Check MCP server availability and provide guidance."""
         if not selected_servers:
             return
+        
+        # First, check PostgreSQL dependency if postgresql server is selected
+        if "postgresql" in selected_servers:
+            if not self._check_postgresql_dependency():
+                if HAS_QUESTIONARY:
+                    questionary.print("🐘 PostgreSQL database is required for PostgreSQL MCP server.", style="fg:#f9e2af")
+                    install_postgres = questionary.confirm(
+                        "Would you like to install PostgreSQL now?",
+                        default=True
+                    ).ask()
+                elif HAS_RICH:
+                    console.print("[yellow]🐘 PostgreSQL database is required for PostgreSQL MCP server.[/yellow]")
+                    install_postgres = Confirm.ask("Would you like to install PostgreSQL now?", default=True)
+                else:
+                    print("🐘 PostgreSQL database is required for PostgreSQL MCP server.")
+                    install_postgres = input("Would you like to install PostgreSQL now? (Y/n): ").strip().lower() not in ['n', 'no']
+                
+                if install_postgres:
+                    project_name = config.get("project_name") if config else None
+                    self._install_postgresql(project_name)
+                    # Verify installation
+                    if not self._check_postgresql_dependency():
+                        if HAS_QUESTIONARY:
+                            questionary.print("❌ PostgreSQL installation failed. Removing postgresql from selected servers.", style="fg:#f38ba8")
+                        elif HAS_RICH:
+                            console.print("[red]❌ PostgreSQL installation failed. Removing postgresql from selected servers.[/red]")
+                        else:
+                            print("❌ PostgreSQL installation failed. Removing postgresql from selected servers.")
+                        selected_servers.remove("postgresql")
+                        return
+                else:
+                    if HAS_QUESTIONARY:
+                        questionary.print("⏭️ Skipping PostgreSQL MCP server setup.", style="fg:#6c7086")
+                    elif HAS_RICH:
+                        console.print("[dim]⏭️ Skipping PostgreSQL MCP server setup.[/dim]")
+                    else:
+                        print("⏭️ Skipping PostgreSQL MCP server setup.")
+                    selected_servers.remove("postgresql")
+                    if not selected_servers:  # No servers left
+                        return
         
         if HAS_QUESTIONARY:
             questionary.print("🔍 Checking MCP server availability...", style="fg:#6c7086")
@@ -663,6 +704,111 @@ class ClaudeSetupTool:
                 console.print("[green]✅ All selected MCP servers are available![/green]")
             else:
                 print("✅ All selected MCP servers are available!")
+    def _check_postgresql_dependency(self) -> bool:
+        """Check if PostgreSQL is installed on the system."""
+        try:
+            # Check if psql command exists
+            result = subprocess.run(['psql', '--version'], capture_output=True, text=True, timeout=5)
+            return result.returncode == 0
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            return False
+
+    def _install_postgresql(self, project_name: str = None):
+        """Install PostgreSQL based on the operating system."""
+        import platform
+        system = platform.system().lower()
+        
+        if HAS_QUESTIONARY:
+            questionary.print("  🐘 Installing PostgreSQL...", style="fg:#6c7086")
+        elif HAS_RICH:
+            console.print("  [dim]🐘 Installing PostgreSQL...[/dim]")
+        else:
+            print("  🐘 Installing PostgreSQL...")
+
+        try:
+            if system == "darwin":  # macOS
+                # Try Homebrew first
+                subprocess.run(['brew', 'install', 'postgresql@15'], check=True, timeout=300)
+                subprocess.run(['brew', 'services', 'start', 'postgresql@15'], check=True, timeout=30)
+            elif system == "linux":
+                # Try apt-get for Ubuntu/Debian
+                subprocess.run(['sudo', 'apt-get', 'update'], check=True, timeout=60)
+                subprocess.run(['sudo', 'apt-get', 'install', '-y', 'postgresql', 'postgresql-contrib'], check=True, timeout=300)
+                subprocess.run(['sudo', 'systemctl', 'start', 'postgresql'], check=True, timeout=30)
+                subprocess.run(['sudo', 'systemctl', 'enable', 'postgresql'], check=True, timeout=30)
+            else:
+                # Windows or other systems
+                if HAS_QUESTIONARY:
+                    questionary.print("  ⚠️ Automatic PostgreSQL installation not supported on this system.", style="fg:#f9e2af")
+                    questionary.print("  📖 Please install PostgreSQL manually from: https://www.postgresql.org/download/", style="fg:#6c7086")
+                elif HAS_RICH:
+                    console.print("  [yellow]⚠️ Automatic PostgreSQL installation not supported on this system.[/yellow]")
+                    console.print("  [dim]📖 Please install PostgreSQL manually from: https://www.postgresql.org/download/[/dim]")
+                else:
+                    print("  ⚠️ Automatic PostgreSQL installation not supported on this system.")
+                    print("  📖 Please install PostgreSQL manually from: https://www.postgresql.org/download/")
+                return
+
+            # Create default database with project name
+            self._create_default_database(project_name)
+            
+            if HAS_QUESTIONARY:
+                questionary.print("  ✅ PostgreSQL installed and started successfully.", style="fg:#98c379")
+            elif HAS_RICH:
+                console.print("  [green]✅ PostgreSQL installed and started successfully.[/green]")
+            else:
+                print("  ✅ PostgreSQL installed and started successfully.")
+                
+        except subprocess.CalledProcessError as e:
+            if HAS_QUESTIONARY:
+                questionary.print(f"  ❌ Failed to install PostgreSQL: {e}", style="fg:#f38ba8")
+            elif HAS_RICH:
+                console.print(f"  [red]❌ Failed to install PostgreSQL: {e}[/red]")
+            else:
+                print(f"  ❌ Failed to install PostgreSQL: {e}")
+        except Exception as e:
+            if HAS_QUESTIONARY:
+                questionary.print(f"  ❌ An error occurred during PostgreSQL installation: {e}", style="fg:#f38ba8")
+            elif HAS_RICH:
+                console.print(f"  [red]❌ An error occurred during PostgreSQL installation: {e}[/red]")
+            else:
+                print(f"  ❌ An error occurred during PostgreSQL installation: {e}")
+
+    def _create_default_database(self, project_name: str = None):
+        """Create a default database for the project."""
+        try:
+            # Create a database with the project name (or default)
+            db_name = project_name or getattr(self, 'current_project_name', 'mydb')
+            # Store the database name for later use
+            self.created_database_name = db_name
+            
+            # Try to create database as postgres user
+            create_db_cmd = ['sudo', '-u', 'postgres', 'createdb', db_name]
+            subprocess.run(create_db_cmd, check=True, timeout=30)
+            
+            if HAS_QUESTIONARY:
+                questionary.print(f"  ✅ Created database: {db_name}", style="fg:#98c379")
+            elif HAS_RICH:
+                console.print(f"  [green]✅ Created database: {db_name}[/green]")
+            else:
+                print(f"  ✅ Created database: {db_name}")
+                
+        except subprocess.CalledProcessError:
+            # Database might already exist or user doesn't have permissions
+            if HAS_QUESTIONARY:
+                questionary.print("  ℹ️ Database creation skipped (may already exist)", style="fg:#6c7086")
+            elif HAS_RICH:
+                console.print("  [dim]ℹ️ Database creation skipped (may already exist)[/dim]")
+            else:
+                print("  ℹ️ Database creation skipped (may already exist)")
+        except Exception as e:
+            if HAS_QUESTIONARY:
+                questionary.print(f"  ⚠️ Could not create database: {e}", style="fg:#f9e2af")
+            elif HAS_RICH:
+                console.print(f"  [yellow]⚠️ Could not create database: {e}[/yellow]")
+            else:
+                print(f"  ⚠️ Could not create database: {e}")
+
     def _is_mcp_server_available(self, server: str) -> bool:
         """Check if an MCP server is available on the system."""
         # Common MCP server packages
@@ -670,7 +816,6 @@ class ClaudeSetupTool:
             "postgresql": "@modelcontextprotocol/server-postgres",
             "mysql": "@modelcontextprotocol/server-mysql",
             "sqlite": "@modelcontextprotocol/server-sqlite", 
-            "fetch": "@modelcontextprotocol/server-fetch",
             "filesystem": "@modelcontextprotocol/server-filesystem",
             "context7": "@upstash/context7-mcp",
             "puppeteer": "puppeteer-mcp-server",
@@ -699,7 +844,6 @@ class ClaudeSetupTool:
             "postgresql": "npm install -g @modelcontextprotocol/server-postgres",
             "mysql": "npm install -g @modelcontextprotocol/server-mysql",
             "sqlite": "npm install -g @modelcontextprotocol/server-sqlite",
-            "fetch": "npm install -g @modelcontextprotocol/server-fetch",
             "filesystem": "npm install -g @modelcontextprotocol/server-filesystem",
             "context7": "npm install -g @upstash/context7-mcp",
             "puppeteer": "npm install -g puppeteer-mcp-server",
@@ -745,7 +889,6 @@ class ClaudeSetupTool:
             "postgresql": "@modelcontextprotocol/server-postgres",
             "mysql": "@modelcontextprotocol/server-mysql",
             "sqlite": "@modelcontextprotocol/server-sqlite", 
-            "fetch": "@modelcontextprotocol/server-fetch",
             "filesystem": "@modelcontextprotocol/server-filesystem",
             "context7": "@upstash/context7-mcp",
             "puppeteer": "puppeteer-mcp-server",
@@ -754,6 +897,32 @@ class ClaudeSetupTool:
         }
 
         for server in servers:
+            # Special handling for PostgreSQL - check if PostgreSQL is installed
+            if server == "postgresql":
+                if not self._check_postgresql_dependency():
+                    if HAS_QUESTIONARY:
+                        questionary.print("  ⚠️ PostgreSQL database is not installed.", style="fg:#f9e2af")
+                        install_postgres = questionary.confirm(
+                            "Would you like to install PostgreSQL first?",
+                            default=True
+                        ).ask()
+                    elif HAS_RICH:
+                        console.print("  [yellow]⚠️ PostgreSQL database is not installed.[/yellow]")
+                        install_postgres = Confirm.ask("Would you like to install PostgreSQL first?", default=True)
+                    else:
+                        print("  ⚠️ PostgreSQL database is not installed.")
+                        install_postgres = input("Would you like to install PostgreSQL first? (Y/n): ").strip().lower() not in ['n', 'no']
+                    
+                    if install_postgres:
+                        self._install_postgresql()
+                    else:
+                        if HAS_QUESTIONARY:
+                            questionary.print(f"  ⏭️ Skipping {server} MCP server installation.", style="fg:#6c7086")
+                        elif HAS_RICH:
+                            console.print(f"  [dim]⏭️ Skipping {server} MCP server installation.[/dim]")
+                        else:
+                            print(f"  ⏭️ Skipping {server} MCP server installation.")
+                        continue
             package_name = server_packages.get(server)
             if not package_name:
                 if HAS_QUESTIONARY:
@@ -1043,20 +1212,45 @@ class ClaudeSetupTool:
         """Interactive framework selection."""
         self.display_frameworks()
         
-        if HAS_RICH:
-            framework_choices = list(self.frameworks.keys())
-            choice = Prompt.ask(
-                "\n[bold]Select a framework[/bold]",
+        if HAS_QUESTIONARY:
+            # Create choices with both display names and values for easy selection
+            framework_choices = []
+            for key, info in self.frameworks.items():
+                framework_choices.append(questionary.Choice(f"{info['name']} - {info['description']}", key))
+            
+            choice = questionary.select(
+                "\n🚀 Select a framework:",
                 choices=framework_choices,
                 default="core"
-            )
+            ).ask()
+            
+        elif HAS_RICH:
+            framework_choices = list(self.frameworks.keys())
+            while True:
+                choice = Prompt.ask(
+                    "\n[bold]Select a framework[/bold]",
+                    choices=framework_choices,
+                    default="core"
+                )
+                # Case-insensitive matching for Rich
+                choice_lower = choice.lower()
+                matching_framework = next((k for k in self.frameworks.keys() if k.lower() == choice_lower), None)
+                if matching_framework:
+                    choice = matching_framework
+                    break
+                console.print(f"[red]Invalid choice. Please select from: {', '.join(framework_choices)}[/red]")
         else:
             print(f"\nAvailable options: {', '.join(self.frameworks.keys())}")
             while True:
-                choice = input("Select a framework (default: core): ").strip().lower()
+                choice = input("Select a framework (default: core): ").strip()
                 if not choice:
                     choice = "core"
-                if choice in self.frameworks:
+                    break
+                # Case-insensitive matching for basic interface
+                choice_lower = choice.lower()
+                matching_framework = next((k for k in self.frameworks.keys() if k.lower() == choice_lower), None)
+                if matching_framework:
+                    choice = matching_framework
                     break
                 print(f"Invalid choice. Please select from: {', '.join(self.frameworks.keys())}")
         
@@ -1312,7 +1506,7 @@ class ClaudeSetupTool:
         
         # MCP servers
         self.configure_mcp_servers(config, framework, mode)
-        self.validate_mcp_servers(config["mcp_servers"])
+        self.validate_mcp_servers(config["mcp_servers"], config)
         
         # Team-specific options - ADD QUESTIONARY TIER
         if mode == "team":
@@ -1542,6 +1736,22 @@ class ClaudeSetupTool:
             
             # New MCP server configurations
             new_mcp_servers = {
+                "postgresql": {
+                    "command": "npx",
+                    "args": ["-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost/mydb"]
+                },
+                "mysql": {
+                    "command": "npx", 
+                    "args": ["-y", "@modelcontextprotocol/server-mysql", "mysql://localhost/mydb"]
+                },
+                "sqlite": {
+                    "command": "npx",
+                    "args": ["-y", "@modelcontextprotocol/server-sqlite", "./database.db"]
+                },
+                "filesystem": {
+                    "command": "npx",
+                    "args": ["-y", "@modelcontextprotocol/server-filesystem", "."]
+                },
                 "context7": {
                     "command": "npx",
                     "args": ["-y", "@upstash/context7-mcp"]
@@ -1554,6 +1764,10 @@ class ClaudeSetupTool:
                 "magic": {
                     "command": "npx",
                     "args": ["-y", "@magicuidesign/mcp@latest"]
+                },
+                "brave-search": {
+                    "command": "npx",
+                    "args": ["-y", "@modelcontextprotocol/server-brave-search"]
                 }
             }
             
@@ -1570,16 +1784,16 @@ class ClaudeSetupTool:
             # Update database connection string if applicable
             if config.get("database") and config["database"] != "none":
                 db_type = config["database"]
+                project_name = config.get("project_name", "mydb")
+                
                 if db_type in filtered_servers:
-                    # Update connection string placeholder
-                    if "env" in filtered_servers[db_type]:
-                        conn_key = next(
-                            (k for k in filtered_servers[db_type]["env"].keys() 
-                             if "CONNECTION_STRING" in k), None
-                        )
-                        if conn_key:
-                            # Keep placeholder for user to fill in
-                            pass
+                    # Update connection string with project-specific database name
+                    if db_type == "postgresql":
+                        filtered_servers[db_type]["args"][-1] = f"postgresql://localhost/{project_name}"
+                    elif db_type == "mysql":
+                        filtered_servers[db_type]["args"][-1] = f"mysql://localhost/{project_name}"
+                    elif db_type == "sqlite":
+                        filtered_servers[db_type]["args"][-1] = f"./{project_name}.db"
             
             return json.dumps(mcp_config, indent=2)
         
