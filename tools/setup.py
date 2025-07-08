@@ -246,9 +246,29 @@ class ClaudeSetupTool:
         config["command_library"] = command_config
         return config
     
+    def get_available_personas(self) -> List[Dict[str, str]]:
+        """Get all available personas from the templates directory."""
+        personas_dir = self.repo_root / "templates" / "personas"
+        personas = []
+        
+        if personas_dir.exists():
+            for persona_file in personas_dir.glob("*.md"):
+                persona_name = persona_file.stem
+                # Convert filename to display name (e.g., "data-scientist" -> "Data Scientist")
+                display_name = persona_name.replace("-", " ").title()
+                personas.append({
+                    "name": persona_name,
+                    "display_name": display_name,
+                    "file": persona_file
+                })
+        
+        # Sort by display name for consistent ordering
+        return sorted(personas, key=lambda x: x["display_name"])
+
     def configure_personas(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """Configure persona installation options."""
         persona_config = {}
+        available_personas = self.get_available_personas()
         
         if HAS_QUESTIONARY:
             questionary.print("\n🎭 Claude Code Personas Setup", style="bold fg:#61afef")
@@ -263,11 +283,14 @@ class ClaudeSetupTool:
             if install_personas:
                 questionary.print("✨ Personas will be available as /persona persona-name", style="fg:#98c379")
                 
-                # Persona selection
+                # Dynamically create persona choices from available files
                 personas = [
-                    questionary.Choice("Architect", "architect", checked=True),
-                    questionary.Choice("Developer", "developer", checked=True),
-                    questionary.Choice("Tester", "tester", checked=True),
+                    questionary.Choice(
+                        persona["display_name"], 
+                        persona["name"], 
+                        checked=True  # Default to all selected
+                    )
+                    for persona in available_personas
                 ]
                 
                 selected_personas = questionary.checkbox(
@@ -284,23 +307,29 @@ class ClaudeSetupTool:
             persona_config["install_personas"] = Confirm.ask("Install personas?", default=True)
             
             if persona_config["install_personas"]:
-                # Simple persona selection for Rich
+                # Dynamic persona selection for Rich
                 console.print("[bold]Available personas:[/bold]")
-                console.print("1. Architect  2. Developer  3. Tester")
+                
+                # Display numbered list of all available personas
+                for i, persona in enumerate(available_personas, 1):
+                    console.print(f"{i}. {persona['display_name']}")
+                
+                # Create default selection (all personas)
+                default_selection = ",".join(str(i) for i in range(1, len(available_personas) + 1))
                 
                 personas_input = Prompt.ask(
                     "Select personas (comma-separated numbers, default: all)",
-                    default="1,2,3"
+                    default=default_selection
                 )
                 
                 try:
-                    persona_map = {
-                        "1": "architect", "2": "developer", "3": "tester"
-                    }
+                    # Create persona mapping
+                    persona_map = {str(i): persona["name"] for i, persona in enumerate(available_personas, 1)}
                     selected_numbers = [n.strip() for n in personas_input.split(",")]
                     persona_config["personas"] = [persona_map[n] for n in selected_numbers if n in persona_map]
                 except:
-                    persona_config["personas"] = ["architect", "developer", "tester"]
+                    # Fallback to all personas
+                    persona_config["personas"] = [persona["name"] for persona in available_personas]
         
         else:
             print("\n🎭 Claude Code Personas Setup")
@@ -310,12 +339,32 @@ class ClaudeSetupTool:
             persona_config["install_personas"] = install_personas
             
             if install_personas:
-                print("Personas: architect, developer, tester")
-                personas_input = input("Select personas (comma-separated, default: all): ").strip()
+                # Display all available personas
+                print("Available personas:")
+                for i, persona in enumerate(available_personas, 1):
+                    print(f"  {i}. {persona['display_name']} ({persona['name']})")
+                
+                personas_input = input("Select personas (comma-separated names or numbers, default: all): ").strip()
                 if personas_input:
-                    persona_config["personas"] = [p.strip() for p in personas_input.split(",")]
+                    # Try to parse as numbers first, then as names
+                    selected_personas = []
+                    inputs = [p.strip() for p in personas_input.split(",")]
+                    
+                    for inp in inputs:
+                        if inp.isdigit():
+                            # Number input
+                            idx = int(inp) - 1
+                            if 0 <= idx < len(available_personas):
+                                selected_personas.append(available_personas[idx]["name"])
+                        else:
+                            # Name input
+                            matching_persona = next((p["name"] for p in available_personas if p["name"] == inp), None)
+                            if matching_persona:
+                                selected_personas.append(matching_persona)
+                    
+                    persona_config["personas"] = selected_personas or [persona["name"] for persona in available_personas]
                 else:
-                    persona_config["personas"] = ["architect", "developer", "tester"]
+                    persona_config["personas"] = [persona["name"] for persona in available_personas]
         
         config["personas"] = persona_config
         return config
