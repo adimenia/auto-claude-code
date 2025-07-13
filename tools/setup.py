@@ -1720,14 +1720,259 @@ class ClaudeSetupTool:
             elif file_name == "settings.json":
                 # Customize settings
                 customized[file_name] = self.customize_settings(content, config)
+            elif file_name == "CLAUDE.md":
+                # CLAUDE.md - comprehensive customization with commands and personas
+                customized[file_name] = self.customize_claude_config(content, config)
             else:
-                # CLAUDE.md - minimal customization for now
+                # Other files - basic customization
                 customized[file_name] = content.replace(
                     "# {Framework} Project - Claude Configuration",
                     f"# {config['project_name']} - Claude Configuration"
                 )
         
         return customized
+
+    def customize_claude_config(self, content: str, config: Dict[str, Any]) -> str:
+        """Customize CLAUDE.md with project name, commands, and personas."""
+        # Basic project name replacement
+        customized_content = content.replace(
+            "# {Framework} Project - Claude Configuration",
+            f"# {config['project_name']} - Claude Configuration"
+        ).replace(
+            "# Core Python Project - Claude Configuration", 
+            f"# {config['project_name']} - Claude Configuration"
+        )
+        
+        # Add custom commands section
+        commands_section = self.generate_commands_section(config)
+        if commands_section:
+            customized_content += "\n\n" + commands_section
+        
+        # Add personas section
+        personas_section = self.generate_personas_section(config)
+        if personas_section:
+            customized_content += "\n\n" + personas_section
+        
+        return customized_content
+
+    def generate_commands_section(self, config: Dict[str, Any]) -> str:
+        """Generate the custom commands section for CLAUDE.md."""
+        commands_dir = self.repo_root / "templates" / "global" / "commands"
+        if not commands_dir.exists():
+            return ""
+        
+        commands_content = []
+        commands_content.append("## 🛠️ Available Custom Commands")
+        commands_content.append("")
+        commands_content.append("This project includes a comprehensive command library for specialized development workflows:")
+        commands_content.append("")
+        
+        # Get all command categories
+        categories = {}
+        for category_dir in commands_dir.iterdir():
+            if category_dir.is_dir():
+                category_name = category_dir.name
+                commands = []
+                for cmd_file in category_dir.glob("*.md"):
+                    cmd_name = cmd_file.stem
+                    # Read first few lines to get description
+                    try:
+                        cmd_content = cmd_file.read_text(encoding='utf-8')
+                        lines = cmd_content.split('\n')
+                        # Look for purpose or description line
+                        description = ""
+                        for line in lines:
+                            if line.startswith("**Purpose**:"):
+                                description = line.replace("**Purpose**:", "").strip()
+                                break
+                        if not description and len(lines) > 2:
+                            description = lines[2].strip()
+                        commands.append((cmd_name, description))
+                    except Exception:
+                        commands.append((cmd_name, ""))
+                
+                if commands:
+                    categories[category_name] = commands
+        
+        # Also check for direct command files
+        for cmd_file in commands_dir.glob("*.md"):
+            cmd_name = cmd_file.stem
+            try:
+                cmd_content = cmd_file.read_text(encoding='utf-8')
+                lines = cmd_content.split('\n')
+                description = ""
+                for line in lines:
+                    if line.startswith("**Purpose**:"):
+                        description = line.replace("**Purpose**:", "").strip()
+                        break
+                if not description and len(lines) > 2:
+                    description = lines[2].strip()
+                if "uncategorized" not in categories:
+                    categories["uncategorized"] = []
+                categories["uncategorized"].append((cmd_name, description))
+            except Exception:
+                pass
+        
+        # Generate formatted output
+        category_icons = {
+            "security": "🔒",
+            "devops": "🚀", 
+            "performance": "⚡",
+            "data": "🔗",
+            "datascience": "🧠",
+            "integration": "🧪",
+            "development": "👨‍💻",
+            "documentation": "📚",
+            "planning": "📋",
+            "quality": "✅",
+            "utility": "🛠️",
+            "workflow": "🔄",
+            "uncategorized": "📂"
+        }
+        
+        for category, cmds in sorted(categories.items()):
+            if not cmds:
+                continue
+            icon = category_icons.get(category, "📂")
+            commands_content.append(f"### {icon} {category.title()} Commands")
+            commands_content.append("")
+            for cmd_name, description in sorted(cmds):
+                if description:
+                    commands_content.append(f"- **`/project:{cmd_name}`** - {description}")
+                else:
+                    commands_content.append(f"- **`/project:{cmd_name}`**")
+            commands_content.append("")
+        
+        commands_content.append("### 💡 Usage Examples")
+        commands_content.append("```")
+        commands_content.append("# Security audit")
+        commands_content.append("/project:security-audit --depth comprehensive")
+        commands_content.append("")
+        commands_content.append("# Create new feature")
+        commands_content.append("/project:create-feature user-authentication")
+        commands_content.append("")
+        commands_content.append("# Setup CI/CD")
+        commands_content.append("/project:setup-ci --platform github-actions")
+        commands_content.append("")
+        commands_content.append("# Data exploration")
+        commands_content.append("/project:data-exploration --dataset data/customers.csv")
+        commands_content.append("```")
+        commands_content.append("")
+        
+        return "\n".join(commands_content)
+
+    def generate_personas_section(self, config: Dict[str, Any]) -> str:
+        """Generate the personas section for CLAUDE.md."""
+        personas_dir = self.repo_root / "templates" / "personas"
+        if not personas_dir.exists():
+            return ""
+        
+        personas_content = []
+        personas_content.append("## 🎭 Expert Personas Available")
+        personas_content.append("")
+        personas_content.append("This project includes specialized expert personas for comprehensive code analysis:")
+        personas_content.append("")
+        
+        # Get all personas
+        personas = []
+        for persona_file in personas_dir.glob("*.md"):
+            persona_name = persona_file.stem
+            try:
+                content = persona_file.read_text(encoding='utf-8')
+                lines = content.split('\n')
+                # Look for focus line
+                focus = ""
+                for line in lines:
+                    if line.startswith("**Focus**:"):
+                        focus = line.replace("**Focus**:", "").strip()
+                        break
+                personas.append((persona_name, focus))
+            except Exception:
+                personas.append((persona_name, ""))
+        
+        # Generate formatted output with icons
+        persona_icons = {
+            "architect": "🏗️",
+            "developer": "👨‍💻",
+            "tester": "🧪",
+            "security-engineer": "🔒",
+            "devops-engineer": "🚀",
+            "performance-engineer": "⚡",
+            "product-manager": "📊",
+            "integration-specialist": "🔗",
+            "data-scientist": "🧠"
+        }
+        
+        for persona_name, focus in sorted(personas):
+            icon = persona_icons.get(persona_name, "👤")
+            display_name = persona_name.replace("-", " ").title()
+            if focus:
+                personas_content.append(f"- **{icon} {display_name}** - {focus}")
+            else:
+                personas_content.append(f"- **{icon} {display_name}**")
+        
+        personas_content.append("")
+        personas_content.append("### 🎯 Using Personas")
+        personas_content.append("```")
+        personas_content.append("# Request specific expertise")
+        personas_content.append("Please review this code from a security engineer perspective")
+        personas_content.append("")
+        personas_content.append("# Multiple perspectives")
+        personas_content.append("Analyze this API design from both architect and security perspectives")
+        personas_content.append("")
+        personas_content.append("# Domain-specific analysis")
+        personas_content.append("Review this ML pipeline as a data scientist")
+        personas_content.append("```")
+        personas_content.append("")
+        
+        return "\n".join(personas_content)
+
+    def copy_command_files(self, target_dir: Path, config: Dict[str, Any]):
+        """Copy command files from global templates to .claude/commands directory."""
+        commands_source_dir = self.repo_root / "templates" / "global" / "commands"
+        if not commands_source_dir.exists():
+            return
+        
+        # Create .claude/commands directory
+        commands_target_dir = target_dir / ".claude" / "commands"
+        commands_target_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Copy all command files, maintaining directory structure
+        for item in commands_source_dir.rglob("*.md"):
+            # Calculate relative path from commands source
+            relative_path = item.relative_to(commands_source_dir)
+            target_path = commands_target_dir / relative_path
+            
+            # Create parent directories if needed
+            target_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            # Copy the file
+            shutil.copy2(item, target_path)
+            
+            if HAS_RICH:
+                console.print(f"[green]✅[/green] Copied command: {relative_path}")
+            else:
+                print(f"✅ Copied command: {relative_path}")
+
+    def copy_persona_files(self, target_dir: Path, config: Dict[str, Any]):
+        """Copy persona files from templates to .claude/personas directory."""
+        personas_source_dir = self.repo_root / "templates" / "personas"
+        if not personas_source_dir.exists():
+            return
+        
+        # Create .claude/personas directory  
+        personas_target_dir = target_dir / ".claude" / "personas"
+        personas_target_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Copy all persona files
+        for persona_file in personas_source_dir.glob("*.md"):
+            target_path = personas_target_dir / persona_file.name
+            shutil.copy2(persona_file, target_path)
+            
+            if HAS_RICH:
+                console.print(f"[green]✅[/green] Copied persona: {persona_file.name}")
+            else:
+                print(f"✅ Copied persona: {persona_file.name}")
 
     def customize_mcp_config(self, content: str, config: Dict[str, Any]) -> str:
         """Customize MCP configuration based on selected servers."""
@@ -1856,6 +2101,10 @@ class ClaudeSetupTool:
                     if HAS_RICH:
                         console.print(f"[green]✅[/green] Created {file_path.relative_to(target_dir)}")
                 
+                # Copy command files and personas
+                self.copy_command_files(target_dir, config)
+                self.copy_persona_files(target_dir, config)
+                
                 # Team mode: Create additional files
                 if mode == "team":
                     # Create local settings template
@@ -1881,6 +2130,10 @@ class ClaudeSetupTool:
                 
                 file_path.write_text(content, encoding='utf-8')
                 print(f"✅ Created {file_path.relative_to(target_dir)}")
+            
+            # Copy command files and personas
+            self.copy_command_files(target_dir, config)
+            self.copy_persona_files(target_dir, config)
             
             # Team mode: Create additional files
             if mode == "team":
