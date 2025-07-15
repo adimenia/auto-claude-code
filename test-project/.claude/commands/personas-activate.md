@@ -5,7 +5,7 @@ Activate a specific persona to direct Claude's behavior towards specialized expe
 
 ## Usage
 ```
-/project:personas-activate <persona_name>
+/personas:activate <persona_name>
 ```
 
 ## Parameters

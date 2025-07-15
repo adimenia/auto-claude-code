@@ -5,7 +5,7 @@ Get detailed information about a specific persona, including focus areas, respon
 
 ## Usage
 ```
-/project:personas-info <persona_name>
+/personas:info <persona_name>
 ```
 
 ## Parameters

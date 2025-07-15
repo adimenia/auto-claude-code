@@ -511,14 +511,16 @@ class ClaudeSetupTool:
                 "quality": ["check-all", "security-check"],
                 "documentation": ["api-docs"],
                 "workflow": ["commit-changes", "create-pr"],
-                "utility": ["cleanup-code"]
+                "utility": ["cleanup-code"],
+                "persona": ["personas-list", "personas-activate", "personas-deactivate", "personas-info", "personas-suggest"]
             },
             "django": {
                 "development": ["create-feature", "fix-bug"],
                 "quality": ["check-all", "security-check"],
                 "documentation": ["create-docs"],
                 "workflow": ["commit-changes", "create-pr"],
-                "utility": ["cleanup-code"]
+                "utility": ["cleanup-code"],
+                "persona": ["personas-list", "personas-activate", "personas-deactivate", "personas-info", "personas-suggest"]
             },
             "data-science": {
                 "planning": ["analyze-requirements"],
@@ -526,13 +528,15 @@ class ClaudeSetupTool:
                 "quality": ["check-all"],
                 "documentation": ["create-docs"],
                 "workflow": ["commit-changes"],
-                "utility": ["cleanup-code"]
+                "utility": ["cleanup-code"],
+                "persona": ["personas-list", "personas-activate", "personas-deactivate", "personas-info", "personas-suggest"]
             },
             "cli-tool": {
                 "development": ["create-feature", "fix-bug"],
                 "quality": ["check-all"],
                 "workflow": ["commit-changes"],
-                "utility": ["cleanup-code"]
+                "utility": ["cleanup-code"],
+                "persona": ["personas-list", "personas-activate", "personas-deactivate", "personas-info", "personas-suggest"]
             }
         }
         
@@ -543,7 +547,8 @@ class ClaudeSetupTool:
             "quality": ["check-all", "code-review"],
             "documentation": ["create-docs", "update-readme"],
             "workflow": ["commit-changes", "create-pr"],
-            "utility": ["cleanup-code", "update-deps"]
+            "utility": ["cleanup-code", "update-deps"],
+            "persona": ["personas-list", "personas-activate", "personas-deactivate", "personas-info", "personas-suggest"]
         }
         
         # Get framework-specific commands or fall back to universal

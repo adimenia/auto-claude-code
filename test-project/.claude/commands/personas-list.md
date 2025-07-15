@@ -5,7 +5,7 @@ Display all available personas with their current status and capabilities.
 
 ## Usage
 ```
-/project:personas-list
+/personas:list
 ```
 
 ## Implementation

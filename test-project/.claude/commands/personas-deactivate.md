@@ -5,7 +5,7 @@ Deactivate the currently active persona, returning Claude to default behavior.
 
 ## Usage
 ```
-/project:personas-deactivate
+/personas:deactivate
 ```
 
 ## Implementation

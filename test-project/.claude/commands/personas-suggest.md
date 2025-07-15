@@ -5,7 +5,7 @@ Get persona suggestions based on context, keywords, or current work focus.
 
 ## Usage
 ```
-/project:personas-suggest <context>
+/personas:suggest <context>
 ```
 
 ## Parameters
