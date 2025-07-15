@@ -8,6 +8,7 @@ from typing import List, Dict, Any, Optional
 from urllib.parse import urlparse
 
 from .base import BaseValidator, ValidationResult, ValidationLevel
+from .input_sanitizer import InputSanitizer, InputType
 
 
 class MCPServerValidator(BaseValidator):
@@ -18,6 +19,7 @@ class MCPServerValidator(BaseValidator):
         self.settings_file = config_path / "settings.json"
         self.mcp_file = config_path / ".mcp.json"
         self.mcp_servers: Dict[str, Dict[str, Any]] = {}
+        self.sanitizer = InputSanitizer()
         
     def validate(self) -> List[ValidationResult]:
         """Validate MCP server configuration and connectivity."""
@@ -71,6 +73,24 @@ class MCPServerValidator(BaseValidator):
         
         # Validate each MCP server
         for server_name, server_config in mcp_config.items():
+            # Sanitize server name
+            name_result = self.sanitizer.sanitize_input(server_name, InputType.SERVER_NAME)
+            if not name_result.is_valid:
+                self.add_result(
+                    ValidationLevel.ERROR,
+                    f"Invalid MCP server name '{server_name}': {'; '.join(name_result.validation_errors)}",
+                    file_path=config_file,
+                    suggestion="Use alphanumeric characters, hyphens, and dots only"
+                )
+            
+            if name_result.security_issues:
+                self.add_result(
+                    ValidationLevel.CRITICAL,
+                    f"Security issues in MCP server name '{server_name}': {'; '.join(name_result.security_issues)}",
+                    file_path=config_file,
+                    suggestion="Change server name to avoid security issues"
+                )
+            
             self._validate_server_config(server_name, server_config)
             self._test_server_connectivity(server_name, server_config)
         
@@ -94,6 +114,26 @@ class MCPServerValidator(BaseValidator):
         command = config.get("command")
         if command:
             if isinstance(command, str):
+                # Sanitize command
+                cmd_result = self.sanitizer.sanitize_input(command, InputType.COMMAND)
+                if not cmd_result.is_valid:
+                    config_file = self.mcp_file if self.mcp_file.exists() else self.settings_file
+                    self.add_result(
+                        ValidationLevel.ERROR,
+                        f"Invalid command for MCP server '{server_name}': {'; '.join(cmd_result.validation_errors)}",
+                        file_path=config_file,
+                        suggestion="Use safe command syntax without shell injection patterns"
+                    )
+                
+                if cmd_result.security_issues:
+                    config_file = self.mcp_file if self.mcp_file.exists() else self.settings_file
+                    self.add_result(
+                        ValidationLevel.CRITICAL,
+                        f"Security issues in command for MCP server '{server_name}': {'; '.join(cmd_result.security_issues)}",
+                        file_path=config_file,
+                        suggestion="Remove dangerous command patterns"
+                    )
+                
                 self._validate_command_executable(server_name, command)
             else:
                 config_file = self.mcp_file if self.mcp_file.exists() else self.settings_file
@@ -106,14 +146,37 @@ class MCPServerValidator(BaseValidator):
         
         # Validate args field
         args = config.get("args")
-        if args and not isinstance(args, list):
-            config_file = self.mcp_file if self.mcp_file.exists() else self.settings_file
-            self.add_result(
-                ValidationLevel.ERROR,
-                f"MCP server '{server_name}' args must be a list",
-                file_path=config_file,
-                suggestion="Change args to a list of strings"
-            )
+        if args:
+            if not isinstance(args, list):
+                config_file = self.mcp_file if self.mcp_file.exists() else self.settings_file
+                self.add_result(
+                    ValidationLevel.ERROR,
+                    f"MCP server '{server_name}' args must be a list",
+                    file_path=config_file,
+                    suggestion="Change args to a list of strings"
+                )
+            else:
+                # Sanitize each argument
+                for i, arg in enumerate(args):
+                    if isinstance(arg, str):
+                        arg_result = self.sanitizer.sanitize_input(arg, InputType.TEXT)
+                        if not arg_result.is_valid:
+                            config_file = self.mcp_file if self.mcp_file.exists() else self.settings_file
+                            self.add_result(
+                                ValidationLevel.ERROR,
+                                f"Invalid argument {i} for MCP server '{server_name}': {'; '.join(arg_result.validation_errors)}",
+                                file_path=config_file,
+                                suggestion="Use safe argument values"
+                            )
+                        
+                        if arg_result.security_issues:
+                            config_file = self.mcp_file if self.mcp_file.exists() else self.settings_file
+                            self.add_result(
+                                ValidationLevel.CRITICAL,
+                                f"Security issues in argument {i} for MCP server '{server_name}': {'; '.join(arg_result.security_issues)}",
+                                file_path=config_file,
+                                suggestion="Remove dangerous patterns from arguments"
+                            )
         
         # Validate optional fields
         env = config.get("env")
@@ -128,6 +191,28 @@ class MCPServerValidator(BaseValidator):
         
         # Check for deprecated configurations
         if "url" in config:
+            # Sanitize URL if present
+            url = config["url"]
+            if isinstance(url, str):
+                url_result = self.sanitizer.sanitize_input(url, InputType.URL)
+                if not url_result.is_valid:
+                    config_file = self.mcp_file if self.mcp_file.exists() else self.settings_file
+                    self.add_result(
+                        ValidationLevel.ERROR,
+                        f"Invalid URL for MCP server '{server_name}': {'; '.join(url_result.validation_errors)}",
+                        file_path=config_file,
+                        suggestion="Use valid URL format"
+                    )
+                
+                if url_result.security_issues:
+                    config_file = self.mcp_file if self.mcp_file.exists() else self.settings_file
+                    self.add_result(
+                        ValidationLevel.CRITICAL,
+                        f"Security issues in URL for MCP server '{server_name}': {'; '.join(url_result.security_issues)}",
+                        file_path=config_file,
+                        suggestion="Remove dangerous URL patterns"
+                    )
+            
             self.add_result(
                 ValidationLevel.WARNING,
                 f"MCP server '{server_name}' uses deprecated 'url' field",
