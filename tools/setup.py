@@ -188,7 +188,8 @@ class ClaudeSetupTool:
                     questionary.Choice("Quality (code review, security check, performance)", "quality", checked=True),
                     questionary.Choice("Documentation (create docs, update README, API docs)", "documentation", checked=True),
                     questionary.Choice("Workflow (commit changes, create PR, deploy)", "workflow", checked=True),
-                    questionary.Choice("Utility (cleanup code, update deps, backup)", "utility", checked=True)
+                    questionary.Choice("Utility (cleanup code, update deps, backup)", "utility", checked=True),
+                    questionary.Choice("Persona (activate specialized expert personas)", "persona", checked=True)
                 ]
                 
                 selected_categories = questionary.checkbox(
@@ -209,22 +210,22 @@ class ClaudeSetupTool:
                 # Simple category selection for Rich
                 console.print("[bold]Available categories:[/bold]")
                 console.print("1. Planning  2. Development  3. Quality")
-                console.print("4. Documentation  5. Workflow  6. Utility")
+                console.print("4. Documentation  5. Workflow  6. Utility  7. Persona")
                 
                 categories_input = Prompt.ask(
                     "Select categories (comma-separated numbers, default: all)",
-                    default="1,2,3,4,5,6"
+                    default="1,2,3,4,5,6,7"
                 )
                 
                 try:
                     category_map = {
                         "1": "planning", "2": "development", "3": "quality",
-                        "4": "documentation", "5": "workflow", "6": "utility"
+                        "4": "documentation", "5": "workflow", "6": "utility", "7": "persona"
                     }
                     selected_numbers = [n.strip() for n in categories_input.split(",")]
                     command_config["categories"] = [category_map[n] for n in selected_numbers if n in category_map]
                 except:
-                    command_config["categories"] = ["planning", "development", "quality", "documentation", "workflow", "utility"]
+                    command_config["categories"] = ["planning", "development", "quality", "documentation", "workflow", "utility", "persona"]
         
         else:
             print("\n🔧 Claude Code Command Library Setup")
@@ -237,12 +238,12 @@ class ClaudeSetupTool:
             command_config["install_project"] = install_project
             
             if install_project:
-                print("Categories: planning, development, quality, documentation, workflow, utility")
+                print("Categories: planning, development, quality, documentation, workflow, utility, persona")
                 categories_input = input("Select categories (comma-separated, default: all): ").strip()
                 if categories_input:
                     command_config["categories"] = [c.strip() for c in categories_input.split(",")]
                 else:
-                    command_config["categories"] = ["planning", "development", "quality", "documentation", "workflow", "utility"]
+                    command_config["categories"] = ["planning", "development", "quality", "documentation", "workflow", "utility", "persona"]
         
         config["command_library"] = command_config
         return config
@@ -459,7 +460,7 @@ class ClaudeSetupTool:
         installed_count = 0
         
         # Copy all command categories to global
-        categories = ["planning", "development", "quality", "documentation", "workflow", "utility"]
+        categories = ["planning", "development", "quality", "documentation", "workflow", "utility", "persona"]
         
         for category in categories:
             category_source = source_commands_dir / category
@@ -1856,6 +1857,7 @@ class ClaudeSetupTool:
             "quality": "✅",
             "utility": "🛠️",
             "workflow": "🔄",
+            "persona": "🎭",
             "uncategorized": "📂"
         }
         
