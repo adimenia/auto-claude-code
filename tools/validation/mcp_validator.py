@@ -137,6 +137,28 @@ class MCPServerValidator(BaseValidator):
     
     def _validate_command_executable(self, server_name: str, command: str) -> None:
         """Validate that the command is executable."""
+        import shutil
+        import os
+        
+        # Validate command format to prevent injection
+        if not command or not isinstance(command, str):
+            self.add_result(
+                ValidationLevel.ERROR,
+                f"MCP server '{server_name}' invalid command format",
+                suggestion="Command must be a non-empty string"
+            )
+            return
+            
+        # Check for dangerous characters
+        dangerous_chars = [';', '&', '|', '`', '$', '(', ')', '<', '>', '"', "'"]
+        if any(char in command for char in dangerous_chars):
+            self.add_result(
+                ValidationLevel.ERROR,
+                f"MCP server '{server_name}' command contains dangerous characters: {command}",
+                suggestion="Use only alphanumeric characters, hyphens, underscores, and path separators"
+            )
+            return
+        
         # Check if it's a full path
         if "/" in command or "\\" in command:
             command_path = Path(command)
@@ -153,21 +175,24 @@ class MCPServerValidator(BaseValidator):
                     suggestion="Ensure the command points to an executable file"
                 )
         else:
-            # Check if command is in PATH
+            # Use shutil.which for safer PATH checking
             try:
-                subprocess.run(['which', command], capture_output=True, check=True)
-            except subprocess.CalledProcessError:
-                self.add_result(
-                    ValidationLevel.WARNING,
-                    f"MCP server '{server_name}' command not found in PATH: {command}",
-                    suggestion=f"Install {command} or provide full path to executable"
-                )
+                command_path = shutil.which(command)
+                if not command_path:
+                    self.add_result(
+                        ValidationLevel.WARNING,
+                        f"MCP server '{server_name}' command not found in PATH: {command}",
+                        suggestion=f"Install {command} or provide full path to executable"
+                    )
             except Exception:
-                # Fallback for non-Unix systems
+                # Fallback for edge cases
                 pass
     
     def _test_server_connectivity(self, server_name: str, config: Dict[str, Any]) -> None:
         """Test MCP server connectivity and basic functionality."""
+        import os
+        import shutil
+        
         command = config.get("command")
         args = config.get("args", [])
         env = config.get("env", {})
@@ -175,13 +200,79 @@ class MCPServerValidator(BaseValidator):
         if not command:
             return
         
+        # Validate command before execution
+        if not isinstance(command, str) or not command.strip():
+            self.add_result(
+                ValidationLevel.ERROR,
+                f"MCP server '{server_name}' invalid command format",
+                suggestion="Command must be a non-empty string"
+            )
+            return
+            
+        # Check for dangerous characters in command
+        dangerous_chars = [';', '&', '|', '`', '$', '(', ')', '<', '>', '"', "'"]
+        if any(char in command for char in dangerous_chars):
+            self.add_result(
+                ValidationLevel.ERROR,
+                f"MCP server '{server_name}' command contains dangerous characters: {command}",
+                suggestion="Use only safe characters in command"
+            )
+            return
+        
+        # Validate args are strings
+        if not isinstance(args, list) or not all(isinstance(arg, str) for arg in args):
+            self.add_result(
+                ValidationLevel.ERROR,
+                f"MCP server '{server_name}' args must be a list of strings",
+                suggestion="Ensure all arguments are strings"
+            )
+            return
+        
+        # Check for dangerous characters in args
+        for arg in args:
+            if any(char in arg for char in dangerous_chars):
+                self.add_result(
+                    ValidationLevel.ERROR,
+                    f"MCP server '{server_name}' arg contains dangerous characters: {arg}",
+                    suggestion="Use only safe characters in arguments"
+                )
+                return
+        
+        # Validate environment variables
+        if not isinstance(env, dict):
+            self.add_result(
+                ValidationLevel.ERROR,
+                f"MCP server '{server_name}' env must be a dictionary",
+                suggestion="Ensure env is a dictionary of string key-value pairs"
+            )
+            return
+        
+        # Ensure command exists and is executable
+        if "/" in command or "\\" in command:
+            command_path = Path(command)
+            if not command_path.exists() or not command_path.is_file():
+                self.add_result(
+                    ValidationLevel.ERROR,
+                    f"MCP server '{server_name}' command not found or not executable: {command}",
+                    suggestion="Ensure command path exists and is executable"
+                )
+                return
+        else:
+            if not shutil.which(command):
+                self.add_result(
+                    ValidationLevel.ERROR,
+                    f"MCP server '{server_name}' command not found in PATH: {command}",
+                    suggestion=f"Install {command} or provide full path"
+                )
+                return
+        
         try:
             # Try to start the server process briefly
             process = subprocess.Popen(
                 [command] + args,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                env={**subprocess.os.environ, **env}
+                env={**os.environ, **env}
             )
             
             # Give it a moment to start

@@ -827,6 +827,15 @@ class ClaudeSetupTool:
         if not package_name:
             return True  # Unknown server, assume available
         
+        # Validate package name to prevent command injection
+        import re
+        if not isinstance(package_name, str) or not package_name.strip():
+            return False
+        
+        # Check for valid npm package name format
+        if not re.match(r'^[@a-zA-Z0-9][@a-zA-Z0-9._/-]*$', package_name):
+            return False
+        
         try:
             import subprocess
             result = subprocess.run(
@@ -933,7 +942,28 @@ class ClaudeSetupTool:
                     print(f"  {server}: Unknown package name, skipping.")
                 continue
 
-            install_command = f"npm install -g {package_name}"
+            # Validate package name to prevent command injection
+            import re
+            if not package_name or not isinstance(package_name, str):
+                if HAS_QUESTIONARY:
+                    questionary.print(f"  ❌ Invalid package name: {package_name}", style="fg:#f38ba8")
+                elif HAS_RICH:
+                    console.print(f"  [red]❌ Invalid package name: {package_name}[/red]")
+                else:
+                    print(f"  ❌ Invalid package name: {package_name}")
+                continue
+            
+            # Check for dangerous characters and validate npm package name format
+            if not re.match(r'^[@a-zA-Z0-9][@a-zA-Z0-9._/-]*$', package_name):
+                if HAS_QUESTIONARY:
+                    questionary.print(f"  ❌ Invalid package name format: {package_name}", style="fg:#f38ba8")
+                elif HAS_RICH:
+                    console.print(f"  [red]❌ Invalid package name format: {package_name}[/red]")
+                else:
+                    print(f"  ❌ Invalid package name format: {package_name}")
+                continue
+            
+            install_command = ["npm", "install", "-g", package_name]
             if HAS_QUESTIONARY:
                 questionary.print(f"  Installing {server} ({package_name})...", style="fg:#6c7086")
             elif HAS_RICH:
@@ -945,7 +975,6 @@ class ClaudeSetupTool:
                 import subprocess
                 result = subprocess.run(
                     install_command,
-                    shell=True,
                     capture_output=True,
                     text=True,
                     check=True,
